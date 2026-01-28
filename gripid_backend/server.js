@@ -45,12 +45,25 @@ app.get('/api/devices', async (req, res) => {
   }
 });
 
-// GET Single Device History
+// GET Single Device History (Improved Search)
 app.get('/api/devices/:sn/history', async (req, res) => {
   try {
-    const device = await Device.findOne({ sn_no: req.params.sn });
-    res.json(device ? device.history : []);
+    const rawSn = req.params.sn.trim(); // Remove spaces from URL param
+
+    // 1. Search using a Case-Insensitive Regex
+    // This finds "gripid123", "GRIPID123", or "GripID123"
+    const device = await Device.findOne({ 
+      sn_no: { $regex: new RegExp(`^${rawSn}$`, 'i') } 
+    });
+
+    if (!device) {
+      console.log(`Device not found for SN: ${rawSn}`);
+      return res.json([]); // Return empty array if not found
+    }
+
+    res.json(device.history);
   } catch (err) {
+    console.error("History Error:", err);
     res.status(500).json({ message: err.message });
   }
 });
