@@ -14,9 +14,9 @@ function App() {
     sn_no: '', imei_1: '', imei_2: '', status: '', note: '' 
   });
 
-  // Load all devices
+  // UPDATED: Use relative path '/api/devices'
   const loadDevices = useCallback(() => {
-    fetch('c/api/devices')
+    fetch('/api/devices')
       .then(res => res.json())
       .then(data => setDevices(Array.isArray(data) ? data : []))
       .catch(err => console.error("Fetch error:", err));
@@ -24,9 +24,9 @@ function App() {
 
   useEffect(() => { loadDevices(); }, [loadDevices]);
 
-  // FIXED: Reliable History Fetch
+  // UPDATED: Removed localhost for history fetch
   const loadHistory = (sn) => {
-    fetch(`http://localhost:5000/api/devices/${sn}/history`)
+    fetch(`/api/devices/${sn}/history`)
       .then(res => res.json())
       .then(data => setHistory(Array.isArray(data) ? data : []))
       .catch(err => console.error("History fetch error:", err));
@@ -57,7 +57,7 @@ function App() {
           else if (/^\d{15}$/.test(cleanText)) {
             setFormData(p => {
               if (!p.imei_1) return { ...p, imei_1: cleanText };
-              if (p.imei_1 !== cleanText) return { ...p, imei_2: cleanText };
+              if (p.imei_1 !== cleanText) return { ...prev, imei_2: cleanText };
               return p;
             });
           }
@@ -76,7 +76,7 @@ function App() {
       status: device.current_status || '',
       note: ''
     });
-    loadHistory(device.sn_no); // Fetch history immediately on click
+    loadHistory(device.sn_no); 
   };
 
   const resetForm = () => {
@@ -89,7 +89,11 @@ function App() {
   const handleSave = async (e) => {
     e.preventDefault();
     const method = isEditing ? 'PUT' : 'POST';
-    const url = isEditing ? `http://localhost:5000/api/devices/${selectedDevice._id}` : 'http://localhost:5000/api/devices';
+    // UPDATED: Removed localhost for save/update
+    const url = isEditing 
+      ? `/api/devices/${selectedDevice._id}` 
+      : '/api/devices';
+    
     await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
