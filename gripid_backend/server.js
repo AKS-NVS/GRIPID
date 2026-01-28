@@ -94,11 +94,12 @@ app.post('/api/import', upload.single('file'), async (req, res) => {
 // --- PRODUCTION SERVING ---
 if (process.env.NODE_ENV === 'production') {
   // Static path to frontend build (adjust based on folder structure)
- const frontendPath = path.join(__dirname, '../gripid_device_tracker/dist');
+const frontendPath = path.join(__dirname, '../gripid_device_tracker/build');
+
+// 2. Serve static files from that folder
 app.use(express.static(frontendPath));
 
-// 2. Use REGEX /.*/ to bypass the "Missing parameter name" error completely
-// This tells Express: "Match ANY route, I don't care about the syntax."
+// 3. The Regex Route (Keep this, it works!)
 app.get(/.*/, (req, res) => {
   res.sendFile(path.resolve(frontendPath, 'index.html'));
 });
