@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
-const xlsx = require('xlsx');
 const fs = require('fs'); 
 require('dotenv').config();
 
@@ -19,19 +18,28 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB Atlas'))
   .catch(err => console.error('MongoDB Error:', err));
 
-// Schema
+// --- SCHEMAS ---
+
+// 1. Device Schema (Keeps only current status)
 const DeviceSchema = new mongoose.Schema({
   sn_no: String,
   imei_1: String,
   imei_2: String,
-  current_status: String,
-  history: [{
-    status: String,
-    date: { type: Date, default: Date.now },
-    note: String
-  }]
+  current_status: String
+  // Removed 'history' array because you use a separate collection
 });
 const Device = mongoose.model('Device', DeviceSchema);
+
+// 2. History Schema (Connects to your existing 'histories' collection)
+const HistorySchema = new mongoose.Schema({
+  device_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
+  sn_no: String,
+  status: String,
+  note: String,
+  date: { type: Date, default: Date.now }
+}, { collection: 'histories' }); // <--- CRITICAL: Links to your specific collection name
+
+const History = mongoose.model('History', HistorySchema);
 
 // --- API ROUTES ---
 
@@ -45,25 +53,18 @@ app.get('/api/devices', async (req, res) => {
   }
 });
 
-// GET Single Device History (Improved Search)
+// GET Single Device History (Reads from 'histories' collection)
 app.get('/api/devices/:sn/history', async (req, res) => {
   try {
-    const rawSn = req.params.sn.trim(); // Remove spaces from URL param
-
-    // 1. Search using a Case-Insensitive Regex
-    // This finds "gripid123", "GRIPID123", or "GripID123"
-    const device = await Device.findOne({ 
+    const rawSn = req.params.sn.trim();
+    
+    // Search the 'histories' collection for this SN (Case Insensitive)
+    const logs = await History.find({ 
       sn_no: { $regex: new RegExp(`^${rawSn}$`, 'i') } 
-    });
+    }).sort({ date: -1 }); // Show newest first
 
-    if (!device) {
-      console.log(`Device not found for SN: ${rawSn}`);
-      return res.json([]); // Return empty array if not found
-    }
-
-    res.json(device.history);
+    res.json(logs);
   } catch (err) {
-    console.error("History Error:", err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -72,63 +73,73 @@ app.get('/api/devices/:sn/history', async (req, res) => {
 app.post('/api/devices', async (req, res) => {
   try {
     const { sn_no, imei_1, imei_2, status, note } = req.body;
+    
+    // 1. Create Device
     const newDevice = new Device({
-      sn_no, imei_1, imei_2, current_status: status,
-      history: [{ status, note }]
+      sn_no, imei_1, imei_2, current_status: status
     });
-    await newDevice.save();
-    res.json(newDevice);
+    const savedDevice = await newDevice.save();
+
+    // 2. Create Initial History Entry in separate collection
+    const firstHistory = new History({
+      device_id: savedDevice._id,
+      sn_no: sn_no,
+      status: status,
+      note: note || 'Initial Entry',
+      date: new Date()
+    });
+    await firstHistory.save();
+
+    res.json(savedDevice);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// PUT Update Device (FIXED: Saves Notes Correctly)
+// PUT Update Device (Updates Device + Adds to History Collection)
 app.put('/api/devices/:id', async (req, res) => {
   try {
-    const { status, note, ...otherData } = req.body;
-    
-    // Create the history entry
-    const newHistoryItem = {
-      status: status,
-      note: note || '', // Ensure note is saved
-      date: new Date()
-    };
+    const { status, note, sn_no, ...otherData } = req.body;
 
+    // 1. Update the Main Device Card
     const updatedDevice = await Device.findByIdAndUpdate(
       req.params.id,
-      {
-        ...otherData,
-        current_status: status,
-        $push: { history: newHistoryItem } // Push to history array
-      },
-      { new: true } // Return updated doc immediately
+      { ...otherData, current_status: status },
+      { new: true }
     );
 
+    // 2. Create a NEW Document in 'histories' collection
+    if (updatedDevice) {
+      const newHistory = new History({
+        device_id: updatedDevice._id,
+        sn_no: updatedDevice.sn_no, // Use the SN from the device to ensure linking
+        status: status,
+        note: note || '',
+        date: new Date()
+      });
+      await newHistory.save();
+    }
+
+    // 3. Return the device (Frontend will fetch history separately)
     res.json(updatedDevice);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// --- PRODUCTION SERVING CONFIGURATION ---
+// --- PRODUCTION SERVING ---
 if (process.env.NODE_ENV === 'production') {
-  // 1. Define Root Path
   const frontendRoot = path.join(__dirname, '../gripid_device_tracker');
-  
-  // 2. Auto-Detect 'dist' vs 'build'
   let frontendPath = path.join(frontendRoot, 'dist');
+  
+  // Auto-detect folder name
   if (!fs.existsSync(frontendPath)) {
-    console.log("Could not find 'dist', looking for 'build'...");
     frontendPath = path.join(frontendRoot, 'build');
   }
 
   console.log(`Serving static files from: ${frontendPath}`);
-  
-  // 3. Serve Static Files
   app.use(express.static(frontendPath));
 
-  // 4. Catch-All Route (Using Regex to bypass Express 5 strictness)
   app.get(/.*/, (req, res) => {
     res.sendFile(path.resolve(frontendPath, 'index.html'));
   });
