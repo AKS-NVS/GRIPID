@@ -1,0 +1,11 @@
+{
+  "name": "gripid-universal-deploy",
+  "version": "1.0.0",
+  "scripts": {
+    "install-backend": "cd gripid_backend && npm install",
+    "install-frontend": "cd gripid_device_tracker && npm install",
+    "build-frontend": "cd gripid_device_tracker && npm run build",
+    "build": "npm run install-backend && npm run install-frontend && npm run build-frontend",
+    "start": "cd gripid_backend && node server.js"
+  }
+}
