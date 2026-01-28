@@ -57,7 +57,7 @@ function App() {
           else if (/^\d{15}$/.test(cleanText)) {
             setFormData(p => {
               if (!p.imei_1) return { ...p, imei_1: cleanText };
-              if (p.imei_1 !== cleanText) return { ...prev, imei_2: cleanText };
+             if (p.imei_1 !== cleanText) return { ...p, imei_2: cleanText };
               return p;
             });
           }
