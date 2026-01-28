@@ -6,6 +6,7 @@ function App() {
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [history, setHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false); // New Loading State
   const [search, setSearch] = useState("");
   const [isScanningSearch, setIsScanningSearch] = useState(false);
   const [isScanningAutoFill, setIsScanningAutoFill] = useState(false);
@@ -14,7 +15,7 @@ function App() {
     sn_no: '', imei_1: '', imei_2: '', status: '', note: '' 
   });
 
-  // UPDATED: Use relative path '/api/devices'
+  // Load all devices
   const loadDevices = useCallback(() => {
     fetch('/api/devices')
       .then(res => res.json())
@@ -24,15 +25,24 @@ function App() {
 
   useEffect(() => { loadDevices(); }, [loadDevices]);
 
-  // UPDATED: Removed localhost for history fetch
+  // FIXED: Instant Feedback Loading
   const loadHistory = (sn) => {
+    setHistory([]); // Clear old history instantly
+    setIsLoadingHistory(true); // Start loading spinner
+
     fetch(`/api/devices/${sn}/history`)
       .then(res => res.json())
-      .then(data => setHistory(Array.isArray(data) ? data : []))
-      .catch(err => console.error("History fetch error:", err));
+      .then(data => {
+        setHistory(Array.isArray(data) ? data : []);
+        setIsLoadingHistory(false); // Stop loading
+      })
+      .catch(err => {
+        console.error("History fetch error:", err);
+        setIsLoadingHistory(false);
+      });
   };
 
-  // One-Shot Search Scanner
+  // Search Scanner
   const scanForSearch = () => {
     setIsScanningSearch(true);
     setTimeout(() => {
@@ -45,7 +55,7 @@ function App() {
     }, 100);
   };
 
-  // Sticky Registration Scanner
+  // FIXED: AutoFill Scanner (Fixed 'prev' error)
   const toggleAutoFillScanner = () => {
     setIsScanningAutoFill(!isScanningAutoFill);
     if (!isScanningAutoFill) {
@@ -57,7 +67,7 @@ function App() {
           else if (/^\d{15}$/.test(cleanText)) {
             setFormData(p => {
               if (!p.imei_1) return { ...p, imei_1: cleanText };
-             if (p.imei_1 !== cleanText) return { ...p, imei_2: cleanText };
+              if (p.imei_1 !== cleanText) return { ...p, imei_2: cleanText }; // Fixed: 'prev' -> 'p'
               return p;
             });
           }
@@ -76,7 +86,7 @@ function App() {
       status: device.current_status || '',
       note: ''
     });
-    loadHistory(device.sn_no); 
+    loadHistory(device.sn_no);
   };
 
   const resetForm = () => {
@@ -86,21 +96,33 @@ function App() {
     setFormData({ sn_no: '', imei_1: '', imei_2: '', status: '', note: '' });
   };
 
+  // FIXED: Instant UI Update (No 4s delay)
   const handleSave = async (e) => {
     e.preventDefault();
     const method = isEditing ? 'PUT' : 'POST';
-    // UPDATED: Removed localhost for save/update
-    const url = isEditing 
-      ? `/api/devices/${selectedDevice._id}` 
-      : '/api/devices';
+    const url = isEditing ? `/api/devices/${selectedDevice._id}` : '/api/devices';
     
-    await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    });
-    resetForm();
-    loadDevices();
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const updatedDevice = await res.json();
+
+      if (isEditing) {
+        // Update list instantly without refetching
+        setDevices(prev => prev.map(d => d._id === updatedDevice._id ? updatedDevice : d));
+        setHistory(updatedDevice.history); // Show new history immediately
+        setFormData(p => ({ ...p, note: '' })); // Clear note field only
+      } else {
+        setDevices(prev => [updatedDevice, ...prev]);
+        resetForm();
+      }
+    } catch (err) {
+      console.error("Save failed:", err);
+    }
   };
 
   const filtered = devices.filter(d => 
@@ -155,14 +177,23 @@ function App() {
             <h3>History</h3>
             <button onClick={resetForm}>×</button>
           </div>
+          
           <div className="timeline">
-            {history.length > 0 ? history.map((h, i) => (
-              <div key={i} className="log-entry">
-                <span className="date">{new Date(h.date).toLocaleDateString()}</span>
-                <p><strong>{h.status}</strong></p>
-                {h.note && <p className="note-text">{h.note}</p>}
+            {isLoadingHistory ? (
+              <div className="loading-state">
+                <p>⏳ Loading history...</p>
               </div>
-            )) : <p className="empty-msg">No history found for this device.</p>}
+            ) : (
+              <>
+                {history.length > 0 ? history.map((h, i) => (
+                  <div key={i} className="log-entry">
+                    <span className="date">{new Date(h.date).toLocaleDateString()}</span>
+                    <p><strong>{h.status}</strong></p>
+                    {h.note && <p className="note-text">{h.note}</p>}
+                  </div>
+                )) : <p className="empty-msg">No history found for this device.</p>}
+              </>
+            )}
           </div>
         </section>
       )}

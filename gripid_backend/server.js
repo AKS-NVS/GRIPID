@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const xlsx = require('xlsx');
+const fs = require('fs'); 
 require('dotenv').config();
 
 const app = express();
@@ -13,96 +14,111 @@ const upload = multer({ dest: 'uploads/' });
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
+// Database Connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("Connected to MongoDB Atlas"))
-  .catch(err => console.error("MongoDB Connection Error:", err));
+  .then(() => console.log('Connected to MongoDB Atlas'))
+  .catch(err => console.error('MongoDB Error:', err));
 
-// Database Schemas
-const deviceSchema = new mongoose.Schema({
-  sn_no: { type: String, unique: true },
+// Schema
+const DeviceSchema = new mongoose.Schema({
+  sn_no: String,
   imei_1: String,
   imei_2: String,
-  current_status: String, // This is your Location field
-  model_type: String
+  current_status: String,
+  history: [{
+    status: String,
+    date: { type: Date, default: Date.now },
+    note: String
+  }]
 });
-
-const historySchema = new mongoose.Schema({
-  sn_no: String,
-  date: { type: Date, default: Date.now },
-  status: String, // Location at the time of update
-  note: String
-});
-
-const Device = mongoose.model('Device', deviceSchema);
-const History = mongoose.model('History', historySchema);
+const Device = mongoose.model('Device', DeviceSchema);
 
 // --- API ROUTES ---
 
-// Get all devices
+// GET All Devices
 app.get('/api/devices', async (req, res) => {
-  const devices = await Device.find();
-  res.json(devices);
+  try {
+    const devices = await Device.find().sort({ _id: -1 });
+    res.json(devices);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-// Get history for a specific device
+// GET Single Device History
 app.get('/api/devices/:sn/history', async (req, res) => {
-  const history = await History.find({ sn_no: req.params.sn }).sort({ date: -1 });
-  res.json(history);
+  try {
+    const device = await Device.findOne({ sn_no: req.params.sn });
+    res.json(device ? device.history : []);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-// Add or Update Device
+// POST New Device
 app.post('/api/devices', async (req, res) => {
-  const { sn_no, imei_1, imei_2, status, note } = req.body;
   try {
-    const device = await Device.findOneAndUpdate(
-      { sn_no },
-      { imei_1, imei_2, current_status: status, model_type: sn_no.includes('V6') ? 'V6' : 'FAP20' },
-      { upsert: true, new: true }
+    const { sn_no, imei_1, imei_2, status, note } = req.body;
+    const newDevice = new Device({
+      sn_no, imei_1, imei_2, current_status: status,
+      history: [{ status, note }]
+    });
+    await newDevice.save();
+    res.json(newDevice);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PUT Update Device (FIXED: Saves Notes Correctly)
+app.put('/api/devices/:id', async (req, res) => {
+  try {
+    const { status, note, ...otherData } = req.body;
+    
+    // Create the history entry
+    const newHistoryItem = {
+      status: status,
+      note: note || '', // Ensure note is saved
+      date: new Date()
+    };
+
+    const updatedDevice = await Device.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...otherData,
+        current_status: status,
+        $push: { history: newHistoryItem } // Push to history array
+      },
+      { new: true } // Return updated doc immediately
     );
-    // Log change to history
-    await History.create({ sn_no, status, note });
-    res.json(device);
-  } catch (err) { res.status(500).json(err); }
+
+    res.json(updatedDevice);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-// Delete Device and its history
-app.delete('/api/devices/:id', async (req, res) => {
-  const device = await Device.findByIdAndDelete(req.params.id);
-  if (device) await History.deleteMany({ sn_no: device.sn_no });
-  res.json({ message: "Deleted successfully" });
-});
-
-// Excel Import Logic (Status column only as Location)
-app.post('/api/import', upload.single('file'), async (req, res) => {
-  try {
-    const workbook = xlsx.readFile(req.file.path);
-    const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-    for (const row of data) {
-      const sn = row['SN NO'];
-      const loc = row['Status 16/12/25'] || 'Imported';
-      await Device.findOneAndUpdate(
-        { sn_no: sn },
-        { imei_1: row['IMEI 1'], imei_2: row['IMEI 2'], current_status: loc },
-        { upsert: true }
-      );
-    }
-    res.json({ message: "Import Successful" });
-  } catch (err) { res.status(500).json(err); }
-});
-
-// --- PRODUCTION SERVING ---
+// --- PRODUCTION SERVING CONFIGURATION ---
 if (process.env.NODE_ENV === 'production') {
-  // Static path to frontend build (adjust based on folder structure)
-const frontendPath = path.join(__dirname, '../gripid_device_tracker/build');
+  // 1. Define Root Path
+  const frontendRoot = path.join(__dirname, '../gripid_device_tracker');
+  
+  // 2. Auto-Detect 'dist' vs 'build'
+  let frontendPath = path.join(frontendRoot, 'dist');
+  if (!fs.existsSync(frontendPath)) {
+    console.log("Could not find 'dist', looking for 'build'...");
+    frontendPath = path.join(frontendRoot, 'build');
+  }
 
-// 2. Serve static files from that folder
-app.use(express.static(frontendPath));
+  console.log(`Serving static files from: ${frontendPath}`);
+  
+  // 3. Serve Static Files
+  app.use(express.static(frontendPath));
 
-// 3. The Regex Route (Keep this, it works!)
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.resolve(frontendPath, 'index.html'));
-});
+  // 4. Catch-All Route (Using Regex to bypass Express 5 strictness)
+  app.get(/.*/, (req, res) => {
+    res.sendFile(path.resolve(frontendPath, 'index.html'));
+  });
 }
 
 const PORT = process.env.PORT || 5000;
