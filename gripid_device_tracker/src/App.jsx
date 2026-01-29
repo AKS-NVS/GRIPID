@@ -6,7 +6,7 @@ function App() {
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [history, setHistory] = useState([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false); // New Loading State
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [search, setSearch] = useState("");
   const [isScanningSearch, setIsScanningSearch] = useState(false);
   const [isScanningAutoFill, setIsScanningAutoFill] = useState(false);
@@ -15,7 +15,6 @@ function App() {
     sn_no: '', imei_1: '', imei_2: '', status: '', note: '' 
   });
 
-  // Load all devices
   const loadDevices = useCallback(() => {
     fetch('/api/devices')
       .then(res => res.json())
@@ -25,16 +24,15 @@ function App() {
 
   useEffect(() => { loadDevices(); }, [loadDevices]);
 
-  // FIXED: Instant Feedback Loading
   const loadHistory = (sn) => {
-    setHistory([]); // Clear old history instantly
-    setIsLoadingHistory(true); // Start loading spinner
+    setHistory([]);
+    setIsLoadingHistory(true);
 
     fetch(`/api/devices/${sn}/history`)
       .then(res => res.json())
       .then(data => {
         setHistory(Array.isArray(data) ? data : []);
-        setIsLoadingHistory(false); // Stop loading
+        setIsLoadingHistory(false);
       })
       .catch(err => {
         console.error("History fetch error:", err);
@@ -42,7 +40,6 @@ function App() {
       });
   };
 
-  // Search Scanner
   const scanForSearch = () => {
     setIsScanningSearch(true);
     setTimeout(() => {
@@ -55,7 +52,6 @@ function App() {
     }, 100);
   };
 
-  // FIXED: AutoFill Scanner (Fixed 'prev' error)
   const toggleAutoFillScanner = () => {
     setIsScanningAutoFill(!isScanningAutoFill);
     if (!isScanningAutoFill) {
@@ -67,7 +63,7 @@ function App() {
           else if (/^\d{15}$/.test(cleanText)) {
             setFormData(p => {
               if (!p.imei_1) return { ...p, imei_1: cleanText };
-              if (p.imei_1 !== cleanText) return { ...p, imei_2: cleanText }; // Fixed: 'prev' -> 'p'
+              if (p.imei_1 !== cleanText) return { ...p, imei_2: cleanText };
               return p;
             });
           }
@@ -96,7 +92,6 @@ function App() {
     setFormData({ sn_no: '', imei_1: '', imei_2: '', status: '', note: '' });
   };
 
-  // FIXED: Instant UI Update (No 4s delay)
   const handleSave = async (e) => {
     e.preventDefault();
     const method = isEditing ? 'PUT' : 'POST';
@@ -112,10 +107,9 @@ function App() {
       const updatedDevice = await res.json();
 
       if (isEditing) {
-        // Update list instantly without refetching
         setDevices(prev => prev.map(d => d._id === updatedDevice._id ? updatedDevice : d));
-        setHistory(updatedDevice.history); // Show new history immediately
-        setFormData(p => ({ ...p, note: '' })); // Clear note field only
+        setHistory(updatedDevice.history || []); // Fallback to empty if undefined
+        setFormData(p => ({ ...p, note: '' }));
       } else {
         setDevices(prev => [updatedDevice, ...prev]);
         resetForm();
@@ -123,6 +117,21 @@ function App() {
     } catch (err) {
       console.error("Save failed:", err);
     }
+  };
+
+  // --- NEW FUNCTION: Smart Tag Logic ---
+  const renderVersionTag = (sn) => {
+    if (!sn) return null;
+    const upperSn = sn.toUpperCase();
+    
+    if (upperSn.includes("V6")) {
+      return <span className="tag V6">V6</span>;
+    } 
+    if (upperSn.includes("FAP")) {
+      // Using inline style for Orange color to differentiate FAP devices
+      return <span className="tag" style={{backgroundColor: '#e67e22', color: 'white'}}>FAP</span>;
+    }
+    return null; // No tag for others
   };
 
   const filtered = devices.filter(d => 
@@ -141,7 +150,22 @@ function App() {
         </button>
         {isScanningAutoFill && <div id="form-reader" className="scanner-box"></div>}
        
-        <form className="add-form" onSubmit={handleSave}>
+        {/* Temporary Fix Buttons (Can be removed later) */}
+        <div style={{marginTop: '20px', borderTop: '1px solid #333', paddingTop: '10px'}}>
+            <small style={{color:'#666', display:'block', marginBottom:'5px'}}>Admin Tools</small>
+            <button 
+            style={{ backgroundColor: '#2c3e50', fontSize: '12px', padding: '5px' }} 
+            onClick={() => {
+                fetch('/api/fix-history', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => alert(data.message));
+            }}
+            >
+            🔧 Fix Missing History
+            </button>
+        </div>
+
+        <form className="add-form" onSubmit={handleSave} style={{marginTop: '20px'}}>
           <div className="input-group"><label>SN Number</label><input value={formData.sn_no} onChange={e => setFormData({...formData, sn_no: e.target.value})} required /></div>
           <div className="input-group"><label>IMEI 1</label><input value={formData.imei_1} onChange={e => setFormData({...formData, imei_1: e.target.value})} /></div>
           <div className="input-group"><label>IMEI 2</label><input value={formData.imei_2} onChange={e => setFormData({...formData, imei_2: e.target.value})} /></div>
@@ -157,10 +181,15 @@ function App() {
           <button className="btn-scan-search" onClick={scanForSearch}>📷 Scan Search</button>
         </header>
         {isScanningSearch && <div id="search-reader" className="scanner-box-search"></div>}
+        
         <div className="grid">
           {filtered.map(d => (
             <div key={d._id} className={`card ${selectedDevice?.sn_no === d.sn_no ? 'active' : ''}`} onClick={() => handleEditInit(d)}>
-              <div className="card-sn">{d.sn_no} <span className="tag V6">V6</span></div>
+              <div className="card-sn">
+                {d.sn_no} 
+                {/* Dynamically Render Tag based on Name */}
+                {renderVersionTag(d.sn_no)}
+              </div>
               <div className="card-imeis">
                 <div className="imei-row">I1: {d.imei_1 || '---'}</div>
                 <div className="imei-row">I2: {d.imei_2 || '---'}</div>
