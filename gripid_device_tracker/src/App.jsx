@@ -150,20 +150,7 @@ function App() {
         </button>
         {isScanningAutoFill && <div id="form-reader" className="scanner-box"></div>}
        
-        {/* Temporary Fix Buttons (Can be removed later) */}
-        <div style={{marginTop: '20px', borderTop: '1px solid #333', paddingTop: '10px'}}>
-            <small style={{color:'#666', display:'block', marginBottom:'5px'}}>Admin Tools</small>
-            <button 
-            style={{ backgroundColor: '#2c3e50', fontSize: '12px', padding: '5px' }} 
-            onClick={() => {
-                fetch('/api/fix-history', { method: 'POST' })
-                .then(res => res.json())
-                .then(data => alert(data.message));
-            }}
-            >
-            🔧 Fix Missing History
-            </button>
-        </div>
+       
 
         <form className="add-form" onSubmit={handleSave} style={{marginTop: '20px'}}>
           <div className="input-group"><label>SN Number</label><input value={formData.sn_no} onChange={e => setFormData({...formData, sn_no: e.target.value})} required /></div>
