@@ -11,6 +11,10 @@ function App() {
   const [isScanningSearch, setIsScanningSearch] = useState(false);
   const [isScanningAutoFill, setIsScanningAutoFill] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // --- NEW: Mobile Menu State ---
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
   const [formData, setFormData] = useState({ 
     sn_no: '', imei_1: '', imei_2: '', status: '', note: '' 
   });
@@ -83,6 +87,7 @@ function App() {
       note: ''
     });
     loadHistory(device.sn_no);
+    setMobileMenuOpen(true); // Automatically open sidebar on mobile
   };
 
   const resetForm = () => {
@@ -114,12 +119,14 @@ function App() {
         setDevices(prev => [updatedDevice, ...prev]);
         resetForm();
       }
+      // Close sidebar on mobile after save
+      if(window.innerWidth < 768) setMobileMenuOpen(false);
+
     } catch (err) {
       console.error("Save failed:", err);
     }
   };
 
-  // --- NEW FUNCTION: Smart Tag Logic ---
   const renderVersionTag = (sn) => {
     if (!sn) return null;
     const upperSn = sn.toUpperCase();
@@ -128,10 +135,9 @@ function App() {
       return <span className="tag V6">V6</span>;
     } 
     if (upperSn.includes("FAP")) {
-      // Using inline style for Orange color to differentiate FAP devices
       return <span className="tag" style={{backgroundColor: '#e67e22', color: 'white'}}>FAP</span>;
     }
-    return null; // No tag for others
+    return null; 
   };
 
   const filtered = devices.filter(d => 
@@ -141,7 +147,19 @@ function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      {/* SIDEBAR: Added 'mobile-open' logic */}
+      <aside className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        
+        {/* Mobile Close Button (Hidden on Desktop) */}
+        <div className="mobile-close-btn" style={{textAlign:'right', marginBottom:'10px', display: mobileMenuOpen ? 'block' : 'none'}}>
+          <button 
+            onClick={() => setMobileMenuOpen(false)}
+            style={{background:'transparent', border:'none', color:'white', fontSize:'24px', cursor:'pointer'}}
+          >
+            ✕
+          </button>
+        </div>
+
         <div className="brand">GripID <span className="accent">Pro</span></div>
         {isEditing && <button className="btn-new-entry" onClick={resetForm}>➕ New Entry</button>}
         
@@ -150,8 +168,6 @@ function App() {
         </button>
         {isScanningAutoFill && <div id="form-reader" className="scanner-box"></div>}
        
-       
-
         <form className="add-form" onSubmit={handleSave} style={{marginTop: '20px'}}>
           <div className="input-group"><label>SN Number</label><input value={formData.sn_no} onChange={e => setFormData({...formData, sn_no: e.target.value})} required /></div>
           <div className="input-group"><label>IMEI 1</label><input value={formData.imei_1} onChange={e => setFormData({...formData, imei_1: e.target.value})} /></div>
@@ -164,9 +180,18 @@ function App() {
 
       <main className="content">
         <header className="top-bar">
+          {/* NEW: Mobile Menu Toggle Button */}
+          <button 
+            className="btn-mobile-menu" 
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            ☰ Add / Scan
+          </button>
+
           <input className="search-bar" placeholder="Type SN/IMEI..." value={search} onChange={e => setSearch(e.target.value)} />
-          <button className="btn-scan-search" onClick={scanForSearch}>📷 Scan Search</button>
+          <button className="btn-scan-search" onClick={scanForSearch}>📷</button>
         </header>
+
         {isScanningSearch && <div id="search-reader" className="scanner-box-search"></div>}
         
         <div className="grid">
@@ -174,7 +199,6 @@ function App() {
             <div key={d._id} className={`card ${selectedDevice?.sn_no === d.sn_no ? 'active' : ''}`} onClick={() => handleEditInit(d)}>
               <div className="card-sn">
                 {d.sn_no} 
-                {/* Dynamically Render Tag based on Name */}
                 {renderVersionTag(d.sn_no)}
               </div>
               <div className="card-imeis">
@@ -187,11 +211,12 @@ function App() {
         </div>
       </main>
 
+      {/* History Drawer */}
       {selectedDevice && (
         <section className="history-drawer">
           <div className="drawer-header">
             <h3>History</h3>
-            <button onClick={resetForm}>×</button>
+            <button onClick={() => setSelectedDevice(null)}>×</button>
           </div>
           
           <div className="timeline">
@@ -212,6 +237,11 @@ function App() {
             )}
           </div>
         </section>
+      )}
+
+      {/* Backdrop for Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="overlay-backdrop" onClick={() => setMobileMenuOpen(false)}></div>
       )}
     </div>
   );

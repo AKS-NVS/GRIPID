@@ -1,323 +1,375 @@
-:root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --v6: #8b5cf6; --fap: #ec4899; --danger: #ef4444; }
-body { background: var(--bg); color: #f8fafc; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
+/* =========================================
+   1. VARIABLES & RESET
+   ========================================= */
+:root { 
+  --primary: #3b82f6; 
+  --bg: #0f172a; 
+  --card: #1e293b; 
+  --v6: #8b5cf6; 
+  --fap: #ec4899; 
+  --danger: #ef4444;
+  --success: #10b981;
+  --text-muted: #94a3b8;
+  --border: #334155;
+}
 
-.app-shell { display: grid; grid-template-columns: 280px 1fr 300px; height: 100vh; }
-@media (max-width: 1100px) { .app-shell { grid-template-columns: 1fr; overflow-y: auto; } .sidebar, .history-drawer { display: none; } }
+body { 
+  background: var(--bg); 
+  color: #f8fafc; 
+  margin: 0; 
+  font-family: 'Inter', sans-serif; 
+  overflow: hidden; /* Prevent body scroll, handle in app-shell */
+}
 
-.sidebar { padding: 24px; border-right: 1px solid #334155; background: #0b1120; }
-.brand { font-size: 24px; font-weight: 800; margin-bottom: 30px; letter-spacing: -1px; }
+/* =========================================
+   2. MAIN LAYOUT
+   ========================================= */
+.app-shell { 
+  display: grid; 
+  grid-template-columns: 280px 1fr 300px; 
+  height: 100vh; 
+}
+
+.content { 
+  padding: 32px; 
+  overflow-y: auto; 
+}
+
+.grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+  gap: 16px; 
+}
+
+/* =========================================
+   3. SIDEBAR & FORMS
+   ========================================= */
+.sidebar { 
+  padding: 24px; 
+  border-right: 1px solid var(--border); 
+  background: #0b1120; 
+  overflow-y: auto;
+}
+
+.brand { 
+  font-size: 24px; 
+  font-weight: 800; 
+  margin-bottom: 30px; 
+  letter-spacing: -1px; 
+}
 .accent { color: var(--primary); }
 
-.add-form input, .add-form select { 
-  width: 100%; margin-bottom: 12px; padding: 12px; border-radius: 8px; 
-  border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; 
+/* Form Inputs */
+.add-form input, 
+.add-form select, 
+.add-form textarea { 
+  width: 100%; 
+  margin-bottom: 12px; 
+  padding: 12px; 
+  border-radius: 8px; 
+  border: 1px solid var(--border); 
+  background: var(--card); 
+  color: white; 
+  box-sizing: border-box; 
+  font-family: inherit;
+  resize: none;
 }
 
-.btn-save { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-.btn-delete { width: 100%; padding: 12px; background: var(--danger); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-.btn-cancel { width: 100%; padding: 10px; background: transparent; color: #94a3b8; border: 1px solid #334155; border-radius: 8px; cursor: pointer; }
+.input-group label { 
+  display: block; 
+  font-size: 11px; 
+  text-transform: uppercase; 
+  color: var(--text-muted); 
+  margin-bottom: 5px; 
+  font-weight: bold; 
+}
 
-.content { padding: 32px; overflow-y: auto; }
-.top-bar { display: flex; gap: 16px; margin-bottom: 32px; position: sticky; top: 0; z-index: 10; background: var(--bg); padding-bottom: 10px; }
-.search-bar { flex: 1; padding: 14px; border-radius: 10px; border: 1px solid #334155; background: var(--card); color: white; }
-.btn-scan { padding: 0 20px; border-radius: 10px; background: #334155; color: white; border: none; cursor: pointer; }
+/* Sidebar Buttons */
+.btn-new-entry { 
+  width: 100%; 
+  padding: 10px; 
+  background: var(--success); 
+  color: white; 
+  border: none; 
+  border-radius: 8px; 
+  margin-bottom: 15px; 
+  font-weight: 700; 
+  cursor: pointer; 
+}
+.btn-new-entry:hover { background: #059669; }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
-.card { background: var(--card); padding: 20px; border-radius: 16px; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
-.card.active { border-color: var(--primary); background: #243147; }
-.card-sn { font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; }
+.btn-scan-mode { 
+  width: 100%; 
+  padding: 12px; 
+  background: var(--border); 
+  color: white; 
+  border: none; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  font-weight: 700; 
+  transition: 0.3s; 
+}
+.btn-scan-mode.active { background: var(--danger); }
 
-.tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; color: white; font-weight: 800; }
+.btn-save { 
+  width: 100%; 
+  padding: 12px; 
+  background: var(--primary); 
+  color: white; 
+  border: none; 
+  border-radius: 8px; 
+  font-weight: 700; 
+  cursor: pointer; 
+}
+
+/* =========================================
+   4. TOP BAR & SEARCH
+   ========================================= */
+.top-bar { 
+  display: flex; 
+  gap: 16px; 
+  margin-bottom: 32px; 
+  position: sticky; 
+  top: 0; 
+  z-index: 10; 
+  background: var(--bg); 
+  padding-bottom: 10px; 
+}
+
+.search-bar { 
+  flex: 1; 
+  padding: 14px; 
+  border-radius: 10px; 
+  border: 1px solid var(--border); 
+  background: var(--card); 
+  color: white; 
+}
+
+.btn-scan-search { 
+  padding: 0 20px; 
+  border-radius: 10px; 
+  background: var(--border); 
+  color: white; 
+  border: 1px solid #475569; 
+  cursor: pointer; 
+  font-weight: bold; 
+}
+
+/* Mobile Menu Button (Default Hidden) */
+.btn-mobile-menu { display: none; }
+
+/* =========================================
+   5. DEVICE CARDS
+   ========================================= */
+.card { 
+  background: var(--card); 
+  padding: 20px; 
+  border-radius: 16px; 
+  border: 2px solid transparent; 
+  cursor: pointer; 
+  transition: 0.2s; 
+}
+.card.active { 
+  border-color: var(--primary); 
+  background: #243147; 
+}
+
+.card-sn { 
+  font-weight: 700; 
+  display: flex; 
+  justify-content: space-between; 
+  margin-bottom: 10px; 
+  font-size: 15px; 
+  align-items: center;
+}
+
+/* Tags */
+.tag { 
+  font-size: 10px; 
+  padding: 2px 8px; 
+  border-radius: 10px; 
+  color: white; 
+  font-weight: 800; 
+}
 .V6 { background: var(--v6); }
-.FAP20 { background: var(--fap); }
-.card-imeis { font-size: 12px; color: #94a3b8; margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
-.card-status { color: var(--primary); font-weight: 700; font-size: 13px; }
+/* FAP color is handled inline in JSX, but can be added here if needed */
 
-.history-drawer { background: #0b1120; border-left: 1px solid #334155; padding: 24px; overflow-y: auto; }
-.log-entry { padding-left: 15px; border-left: 2px solid var(--primary); margin-bottom: 20px; position: relative; }
-.log-entry::after { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; background: var(--primary); border-radius: 50%; }
-.date { font-size: 11px; color: #64748b; font-weight: 600; }
+/* IMEI Styling */
+.card-imeis { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 4px; 
+  margin: 10px 0; 
+}
 
-.add-form textarea {
-  width: 100%;
-  margin-bottom: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #334155;
-  background: #1e293b;
+.imei-row { 
+  font-size: 13px; 
+  color: var(--text-muted); 
+  background: rgba(255,255,255,0.03); 
+  padding: 4px 8px; 
+  border-radius: 4px; 
+}
+
+/* Location/Status Badge */
+.card-location { 
+  color: var(--primary); 
+  font-weight: 800; 
+  font-size: 13px; 
+  text-transform: uppercase; 
+  background: rgba(59, 130, 246, 0.1); 
+  padding: 6px 12px; 
+  border-radius: 8px; 
+  display: inline-block; 
+}
+
+/* =========================================
+   6. HISTORY DRAWER
+   ========================================= */
+.history-drawer { 
+  background: #0b1120; 
+  border-left: 1px solid var(--border); 
+  padding: 24px; 
+  overflow-y: auto; 
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.drawer-header button {
+  background: transparent;
+  border: none;
   color: white;
-  box-sizing: border-box;
-  font-family: inherit;
-  resize: none;
-}
-
-.note-text {
-  font-size: 13px;
-  color: #94a3b8;
-  margin-top: 5px;
-  background: #1e293b;
-  padding: 8px;
-  border-radius: 4px;
-}
-
-.card-status {
-  color: var(--primary);
-  font-weight: 700;
-  font-size: 14px;
-  margin-top: 10px;
-  /* Ensure status stays on one line to prevent card bloat */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Highlight the location/status specifically */
-.card-location-label {
-  color: var(--primary);
-  font-weight: 800;
-  font-size: 14px;
-  margin-top: 8px;
-  text-transform: uppercase;
-  border-top: 1px solid #334155;
-  padding-top: 8px;
-}
-
-.add-form textarea {
-  width: 100%;
-  margin-bottom: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #334155;
-  background: #1e293b;
-  color: white;
-  box-sizing: border-box;
-  font-family: inherit;
-  resize: none;
-}
-
-.note-text {
-  font-size: 12px;
-  color: #94a3b8;
-  font-style: italic;
-  margin-top: 4px;
-  background: #1e293b;
-  padding: 5px;
-  border-radius: 4px;
-}
-.btn-scan-trigger {
-  width: 100%;
-  padding: 10px;
-  background: #334155;
-  color: white;
-  border: 1px solid #475569;
-  border-radius: 8px;
-  margin-bottom: 15px;
+  font-size: 20px;
   cursor: pointer;
-  font-weight: 600;
 }
 
-.scanner-container {
-  width: 100%;
-  margin-bottom: 15px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 2px solid var(--primary);
+.log-entry { 
+  padding-left: 15px; 
+  border-left: 2px solid var(--primary); 
+  margin-bottom: 20px; 
+  position: relative; 
+}
+.log-entry::after { 
+  content: ''; 
+  position: absolute; 
+  left: -6px; top: 0; 
+  width: 10px; height: 10px; 
+  background: var(--primary); 
+  border-radius: 50%; 
+}
+
+.date { 
+  font-size: 11px; 
+  color: #64748b; 
+  font-weight: 600; 
+}
+
+.note-text { 
+  font-size: 12px; 
+  color: var(--text-muted); 
+  font-style: italic; 
+  background: var(--card); 
+  padding: 8px; 
+  border-radius: 6px; 
+  margin-top: 5px; 
+}
+
+.empty-msg, .loading-state {
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* =========================================
+   7. SCANNERS
+   ========================================= */
+.scanner-box, .scanner-box-search { 
+  width: 100%; 
+  margin-bottom: 20px; 
+  border-radius: 12px; 
+  overflow: hidden; 
+  border: 2px solid var(--primary); 
 }
 
 #reader__status_span { color: white !important; }
-#reader__dashboard_section_csr button { background: var(--primary); color: white; border: none; padding: 5px 10px; border-radius: 4px; }
-
-/* Keep Location badge bold and blue */
-.card-location-badge {
-  color: #3b82f6;
-  font-weight: 800;
-  font-size: 14px;
-  margin-top: 10px;
-  text-transform: uppercase;
-  background: rgba(59, 130, 246, 0.1);
-  padding: 6px 12px;
-  border-radius: 8px;
-  display: inline-block;
-}
-.btn-delete {
-  width: 100%;
-  padding: 12px;
-  background: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 8px;
+#reader__dashboard_section_csr button { 
+  background: var(--primary); 
+  color: white; 
+  border: none; 
+  padding: 5px 10px; 
+  border-radius: 4px; 
 }
 
-.btn-delete:hover { background: #dc2626; }
+/* =========================================
+   8. MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 768px) {
+  .app-shell {
+    grid-template-columns: 1fr; /* Stack everything */
+    height: auto;
+  }
 
-.btn-scan-trigger {
-  width: 100%;
-  padding: 10px;
-  background: #334155;
-  color: white;
-  border: 1px solid #475569;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  cursor: pointer;
-  font-weight: 600;
-}
-.card-imei-block {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin: 12px 0;
-}
+  /* Sidebar: Hidden by default, slides in */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    width: 85%;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+  }
 
-.imei-line {
-  font-size: 13px;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 4px 8px;
-  border-radius: 4px;
-}
+  .sidebar.mobile-open { transform: translateX(0); }
 
-.scanner-box {
-  margin-bottom: 20px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 2px solid var(--primary);
-}
+  /* Content takes full width */
+  .content { 
+    margin-left: 0; 
+    width: 100%; 
+    padding-bottom: 80px; 
+    box-sizing: border-box;
+  }
 
-.card-location-badge {
-  color: var(--primary);
-  font-weight: 800;
-  font-size: 13px;
-  text-transform: uppercase;
-  background: rgba(59, 130, 246, 0.1);
-  padding: 6px 12px;
-  border-radius: 8px;
-  display: inline-block;
-}
-/* Sidebar 'New' Button */
-.btn-new-entry {
-  width: 100%;
-  padding: 10px;
-  background: #10b981; /* Green for 'New' */
-  color: white;
-  border: none;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
+  /* History Drawer: Full screen overlay on mobile */
+  .history-drawer {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%;
+    height: 60vh;
+    border-top: 2px solid var(--primary);
+    border-left: none;
+    z-index: 950;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    box-sizing: border-box;
+  }
 
-.btn-new-entry:hover { background: #059669; }
+  /* Show Mobile Header Button */
+  .btn-mobile-menu {
+    display: block;
+    background: var(--primary);
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-right: 10px;
+    cursor: pointer;
+    font-weight: bold;
+  }
 
-/* IMEI Stacking */
-.card-imei-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 12px 0;
+  .grid { grid-template-columns: 1fr; }
 }
 
-.imei-item {
-  font-size: 13px;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px 8px;
-  border-radius: 5px;
+/* Backdrop for Mobile Sidebar */
+.overlay-backdrop {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 900;
+  backdrop-filter: blur(2px);
 }
-
-/* Location Badge Styling */
-.card-location {
-  color: #3b82f6;
-  font-weight: 800;
-  font-size: 13px;
-  text-transform: uppercase;
-  background: rgba(59, 130, 246, 0.1);
-  padding: 6px 12px;
-  border-radius: 8px;
-  display: inline-block;
-}
-.scanner-section { margin-bottom: 20px; }
-.btn-scan-mode {
-  width: 100%; padding: 12px; background: #334155; color: white; border: none;
-  border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.3s;
-}
-.btn-scan-mode.active { background: #ef4444; }
-
-.live-camera-feed {
-  margin-top: 10px; border-radius: 12px; overflow: hidden; border: 3px solid var(--primary);
-  background: black; min-height: 200px;
-}
-
-.input-group { margin-bottom: 15px; }
-.input-group label { display: block; font-size: 11px; text-transform: uppercase; color: #94a3b8; margin-bottom: 5px; font-weight: bold; }
-
-.card-imei-display { margin: 12px 0; }
-.imei-line { 
-  font-size: 12px; color: #cbd5e1; background: rgba(255,255,255,0.05); 
-  padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; 
-}
-
-.card-loc-badge {
-  background: rgba(59, 130, 246, 0.1); color: var(--primary);
-  padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 800;
-}
-.card-imeis {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 10px 0;
-}
-
-.imei-row {
-  font-size: 13px;
-  color: #94a3b8;
-  background: rgba(255,255,255,0.03);
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.card-location {
-  color: #3b82f6;
-  font-weight: 800;
-  font-size: 13px;
-  text-transform: uppercase;
-  background: rgba(59, 130, 246, 0.1);
-  padding: 6px 12px;
-  border-radius: 8px;
-  display: inline-block;
-}
-
-.btn-scan-search {
-  padding: 0 20px;
-  border-radius: 10px;
-  background: #334155;
-  color: white;
-  border: 1px solid #475569;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.scanner-box-search {
-  width: 100%;
-  max-width: 500px;
-  margin: 20px auto;
-  border-radius: 15px;
-  overflow: hidden;
-  border: 3px solid var(--primary);
-}
-.card-imeis { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
-.imei-row { font-size: 13px; color: #94a3b8; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; }
-
-.card-location {
-  color: #3b82f6; font-weight: 800; font-size: 13px; text-transform: uppercase;
-  background: rgba(59, 130, 246, 0.1); padding: 6px 12px; border-radius: 8px; display: inline-block;
-}
-
-.history-drawer { background: #0b1120; border-left: 1px solid #334155; padding: 20px; overflow-y: auto; }
-.log-entry { padding-left: 15px; border-left: 2px solid #3b82f6; margin-bottom: 20px; position: relative; }
-.note-text { font-size: 12px; color: #94a3b8; font-style: italic; background: #1e293b; padding: 8px; border-radius: 6px; margin-top: 5px; }
-
-.btn-new-entry { width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 8px; margin-bottom: 15px; font-weight: 700; cursor: pointer; }
