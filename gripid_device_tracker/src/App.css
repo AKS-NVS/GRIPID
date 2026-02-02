@@ -155,9 +155,6 @@ body {
   font-weight: bold; 
 }
 
-/* Mobile Menu Button (Default Hidden) */
-.btn-mobile-menu { display: none; }
-
 /* =========================================
    5. DEVICE CARDS
    ========================================= */
@@ -192,7 +189,6 @@ body {
   font-weight: 800; 
 }
 .V6 { background: var(--v6); }
-/* FAP color is handled inline in JSX, but can be added here if needed */
 
 /* IMEI Styling */
 .card-imeis { 
@@ -304,15 +300,42 @@ body {
 }
 
 /* =========================================
-   8. MOBILE RESPONSIVENESS
+   8. MOBILE RESPONSIVENESS (FINAL & CLEAN)
    ========================================= */
+
+/* 1. Mobile Menu Button (Hidden on Desktop) */
+.btn-mobile-menu {
+  display: none;
+}
+
+/* 2. Overlay Backdrop (DEFAULT: HIDDEN ON DESKTOP) */
+.overlay-backdrop {
+  display: none;
+}
+
+/* 3. Mobile Layout Logic */
 @media (max-width: 768px) {
   .app-shell {
-    grid-template-columns: 1fr; /* Stack everything */
-    height: auto;
+    /* SCROLL FIX: Force height to viewport and scroll internally */
+    display: block;
+    height: 100vh;
+    overflow-y: scroll; 
+    -webkit-overflow-scrolling: touch;
+    position: relative;
   }
 
-  /* Sidebar: Hidden by default, slides in */
+  /* SHOW BACKDROP ONLY ON MOBILE */
+  .overlay-backdrop {
+    display: block; 
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 900;
+    backdrop-filter: blur(2px);
+  }
+
+  /* SIDEBAR: Hidden by default, slides in from left */
   .sidebar {
     position: fixed;
     top: 0; left: 0;
@@ -322,35 +345,42 @@ body {
     transform: translateX(-100%);
     transition: transform 0.3s ease-in-out;
     box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+    background: #0b1120;
+    display: block !important;
   }
 
-  .sidebar.mobile-open { transform: translateX(0); }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
 
-  /* Content takes full width */
+  /* CONTENT: Remove padding that might block scroll */
   .content { 
     margin-left: 0; 
     width: 100%; 
-    padding-bottom: 80px; 
+    padding: 20px;
+    padding-bottom: 100px; /* Extra space at bottom for scrolling */
     box-sizing: border-box;
+    overflow: visible; /* Let parent handle scroll */
   }
 
-  /* History Drawer: Full screen overlay on mobile */
+  /* HISTORY DRAWER: Bottom Sheet on Mobile */
   .history-drawer {
     position: fixed;
     bottom: 0; left: 0;
     width: 100%;
     height: 60vh;
-    border-top: 2px solid var(--primary);
+    border-top: 2px solid #3b82f6;
     border-left: none;
     z-index: 950;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-    box-sizing: border-box;
+    background: #0b1120;
+    display: block !important;
   }
 
-  /* Show Mobile Header Button */
+  /* HEADER BUTTONS */
   .btn-mobile-menu {
     display: block;
-    background: var(--primary);
+    background: #3b82f6;
     border: none;
     color: white;
     padding: 10px 15px;
@@ -362,14 +392,6 @@ body {
   }
 
   .grid { grid-template-columns: 1fr; }
-}
-
-/* Backdrop for Mobile Sidebar */
-.overlay-backdrop {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  z-index: 900;
-  backdrop-filter: blur(2px);
+  
+  .scanner-box, .scanner-box-search { width: 100% !important; }
 }
