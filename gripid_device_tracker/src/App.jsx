@@ -28,7 +28,7 @@ function App() {
   const [uploadResult, setUploadResult] = useState(null);
   const fileInputRef = useRef(null);
   
-  // --- NEW: SWIPE LOGIC STATE ---
+  // Swipe Logic State
   const [sheetDragY, setSheetDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef(0);
@@ -36,6 +36,9 @@ function App() {
   const [formData, setFormData] = useState({ 
     sn_no: '', imei_1: '', imei_2: '', status: '', note: '' 
   });
+
+  // Helper to check screen size
+  const isDesktop = () => window.innerWidth > 768;
 
   // --- FETCH DEVICES (With Pagination) ---
   const loadDevices = useCallback((pageNo = 1) => {
@@ -150,10 +153,26 @@ function App() {
   };
 
   const handleCardClick = (device) => {
-    setSelectedDevice(device);
-    setIsEditing(false); 
     loadHistory(device.sn_no);
-    setSheetDragY(0); // Reset drag position on open
+
+    if (isDesktop()) {
+      // DESKTOP: Immediate Edit + History Drawer
+      setSelectedDevice(device);
+      setIsEditing(true);
+      setFormData({
+        sn_no: device.sn_no || '',
+        imei_1: device.imei_1 || '',
+        imei_2: device.imei_2 || '',
+        status: device.current_status || '',
+        note: ''
+      });
+      // Do not open mobile sheet
+    } else {
+      // MOBILE: Open View Sheet
+      setSelectedDevice(device);
+      setIsEditing(false); 
+      setSheetDragY(0); 
+    }
   };
 
   const handleEditStart = () => {
@@ -224,7 +243,7 @@ function App() {
     return matchesSearch && matchesFilter;
   });
 
-  // --- NEW: TOUCH HANDLERS (Swipe to Close) ---
+  // --- TOUCH HANDLERS (Swipe to Close) ---
   const handleTouchStart = (e) => {
     dragStartY.current = e.touches[0].clientY;
     setIsDragging(true);
@@ -234,8 +253,6 @@ function App() {
     if (!isDragging) return;
     const currentY = e.touches[0].clientY;
     const diff = currentY - dragStartY.current;
-    
-    // Only allow dragging DOWN (positive diff)
     if (diff > 0) {
       setSheetDragY(diff);
     }
@@ -243,11 +260,10 @@ function App() {
 
   const handleTouchEnd = () => {
     setIsDragging(false);
-    // If dragged more than 120px down, close it
     if (sheetDragY > 120) {
-      setSelectedDevice(null); // Close
+      setSelectedDevice(null); 
     } else {
-      setSheetDragY(0); // Snap back to top
+      setSheetDragY(0);
     }
   };
 
@@ -300,7 +316,7 @@ function App() {
 
         <div className="grid">
           {filtered.map(d => (
-            <div key={d._id} className="card" onClick={() => handleCardClick(d)}>
+            <div key={d._id} className={`card ${selectedDevice?.sn_no === d.sn_no ? 'active' : ''}`} onClick={() => handleCardClick(d)}>
               <div className="card-sn">{d.sn_no} {renderVersionTag(d.sn_no)}</div>
               <div className="card-imeis">
                 <div className="imei-row">I1: {d.imei_1 || '---'}</div>
@@ -334,16 +350,36 @@ function App() {
         </div>
       </main>
 
-      {/* --- MODERN DETAILS SHEET (With Swipe) --- */}
-      {selectedDevice && !mobileMenuOpen && (
+      {/* --- DESKTOP HISTORY DRAWER (Right Side) --- */}
+      {selectedDevice && isEditing && (
+        <section className="desktop-history">
+          <div className="drawer-header">
+             <h3>History: {selectedDevice.sn_no}</h3>
+             <button onClick={() => setSelectedDevice(null)}>✕</button>
+          </div>
+          <div className="timeline">
+            {isLoadingHistory ? <p>⏳ Loading...</p> : (
+               history.length > 0 ? history.map((h, i) => (
+                 <div key={i} className="log-entry">
+                   <span className="date">{new Date(h.date).toLocaleDateString()}</span>
+                   <p><strong>{h.status}</strong></p>
+                   {h.note && <p className="note-text">{h.note}</p>}
+                 </div>
+               )) : <p className="empty-msg">No history.</p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* --- MOBILE DETAILS SHEET (Bottom Swipe) --- */}
+      {selectedDevice && !isEditing && (
         <div className="modal-overlay" onClick={() => setSelectedDevice(null)}>
           <div 
             className={`modal-content details-sheet ${isDragging ? 'dragging' : ''}`} 
             onClick={e => e.stopPropagation()}
-            style={{ transform: `translateY(${sheetDragY}px)` }} // Apply the drag move
+            style={{ transform: `translateY(${sheetDragY}px)` }}
           >
             
-            {/* Drag Handle - ATTACHED SWIPE LISTENERS HERE */}
             <div 
               className="sheet-handle-bar" 
               onTouchStart={handleTouchStart}
@@ -353,7 +389,6 @@ function App() {
               <div className="sheet-handle"></div>
             </div>
 
-            {/* Header - Also swipable for ease of use */}
             <div 
               className="sheet-header-modern"
               onTouchStart={handleTouchStart}
@@ -370,7 +405,6 @@ function App() {
             </div>
 
             <div className="sheet-scroll-content">
-              {/* Data Grid */}
               <div className="data-grid">
                 <div className="data-box">
                   <span className="label">IMEI 1</span>
@@ -382,7 +416,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Timeline */}
               <div className="timeline-section">
                 <h4>Activity Log</h4>
                 <div className="timeline-container">
@@ -404,7 +437,6 @@ function App() {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="sheet-footer">
               <button className="btn-edit-action" onClick={handleEditStart}>
                 ✏️ Edit / Update

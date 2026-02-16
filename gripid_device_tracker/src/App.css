@@ -13,20 +13,27 @@
   --border: #334155;
 }
 
+* {
+  box-sizing: border-box; 
+  -webkit-tap-highlight-color: transparent;
+}
+
 body { 
   background: var(--bg); 
   color: #f8fafc; 
   margin: 0; 
   font-family: 'Inter', sans-serif; 
   overflow: hidden; /* Prevent body scroll, handle in app-shell */
+  overscroll-behavior-y: none; /* No pull-to-refresh bounce */
 }
 
 /* =========================================
-   2. MAIN LAYOUT
+   2. MAIN LAYOUT (Responsive Grid)
    ========================================= */
 .app-shell { 
   display: grid; 
-  grid-template-columns: 280px 1fr; /* Sidebar | Content */
+  /* Default Desktop: Sidebar | Content | (History adds itself here) */
+  grid-template-columns: 280px 1fr auto; 
   height: 100vh; 
 }
 
@@ -34,6 +41,9 @@ body {
   padding: 32px; 
   overflow-y: auto; 
   position: relative;
+  /* Scrollbar Styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg);
 }
 
 .grid { 
@@ -56,183 +66,85 @@ body {
 }
 
 .brand { 
-  font-size: 24px; 
-  font-weight: 800; 
-  margin-bottom: 30px; 
-  letter-spacing: -1px; 
+  font-size: 24px; font-weight: 800; margin-bottom: 30px; letter-spacing: -1px; 
 }
 .accent { color: var(--primary); }
 
-/* Form Inputs */
-.add-form input, 
-.add-form select, 
-.add-form textarea { 
-  width: 100%; 
-  margin-bottom: 12px; 
-  padding: 12px; 
-  border-radius: 8px; 
-  border: 1px solid var(--border); 
-  background: var(--card); 
-  color: white; 
-  box-sizing: border-box; 
-  font-family: inherit;
-  resize: none;
-  outline: none;
+/* Inputs */
+.add-form input, .add-form select, .add-form textarea { 
+  width: 100%; margin-bottom: 12px; padding: 12px; 
+  border-radius: 8px; border: 1px solid var(--border); 
+  background: var(--card); color: white; outline: none; resize: none;
 }
-
 .input-group label { 
-  display: block; 
-  font-size: 11px; 
-  text-transform: uppercase; 
-  color: var(--text-muted); 
-  margin-bottom: 5px; 
-  font-weight: bold; 
+  display: block; font-size: 11px; text-transform: uppercase; 
+  color: var(--text-muted); margin-bottom: 5px; font-weight: bold; 
 }
 
 /* Buttons */
 .btn-new-entry { 
-  width: 100%; 
-  padding: 10px; 
-  background: var(--success); 
-  color: white; 
-  border: none; 
-  border-radius: 8px; 
-  margin-bottom: 15px; 
-  font-weight: 700; 
-  cursor: pointer; 
+  width: 100%; padding: 10px; background: var(--success); color: white; 
+  border: none; border-radius: 8px; margin-bottom: 15px; font-weight: 700; cursor: pointer; 
 }
-.btn-new-entry:hover { background: #059669; }
-
 .btn-scan-mode { 
-  width: 100%; 
-  padding: 12px; 
-  background: var(--border); 
-  color: white; 
-  border: 1px solid #475569;
-  border-radius: 8px; 
-  cursor: pointer; 
-  font-weight: 700; 
-  margin-bottom: 10px;
-  transition: 0.2s;
+  width: 100%; padding: 12px; background: var(--border); color: white; 
+  border: 1px solid #475569; border-radius: 8px; cursor: pointer; font-weight: 700; margin-bottom: 10px;
 }
-.btn-scan-mode:hover { background: #475569; }
-
 .btn-save { 
-  width: 100%; 
-  padding: 12px; 
-  background: var(--primary); 
-  color: white; 
-  border: none; 
-  border-radius: 8px; 
-  font-weight: 700; 
-  cursor: pointer; 
+  width: 100%; padding: 12px; background: var(--primary); color: white; 
+  border: none; border-radius: 8px; font-weight: 700; cursor: pointer; 
 }
 
-/* Utility Buttons (Import/Export) */
+/* Utility Buttons */
 .btn-utility {
-  flex: 1;
-  padding: 8px;
-  background: #334155;
-  color: white;
-  border: 1px solid #475569;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
+  flex: 1; padding: 8px; background: #334155; color: white; 
+  border: 1px solid #475569; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
 }
-.btn-utility:hover { background: #475569; }
 
 /* =========================================
    4. TOP BAR & SEARCH
    ========================================= */
 .top-bar { 
-  display: flex; 
-  gap: 16px; 
-  margin-bottom: 20px; 
-  position: sticky; 
-  top: 0; 
-  z-index: 10; 
-  background: var(--bg); 
-  padding-bottom: 10px; 
+  display: flex; gap: 16px; margin-bottom: 20px; 
+  position: sticky; top: 0; z-index: 10; 
+  background: var(--bg); padding-bottom: 10px; 
 }
 
 .search-group {
-  flex: 1;
-  display: flex;
-  gap: 8px;
-  background: var(--card);
-  padding: 5px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  align-items: center;
+  flex: 1; display: flex; gap: 8px; background: var(--card); 
+  padding: 5px; border-radius: 10px; border: 1px solid var(--border); align-items: center;
 }
 
 .filter-select {
-  background: transparent;
-  color: white;
-  border: none;
-  border-right: 1px solid var(--border);
-  padding: 0 10px;
-  font-weight: bold;
-  cursor: pointer;
-  outline: none;
-  height: 100%;
+  background: transparent; color: white; border: none; 
+  border-right: 1px solid var(--border); padding: 0 10px; font-weight: bold; cursor: pointer; outline: none; height: 100%;
 }
 .filter-select option { background: var(--bg); }
 
 .search-group .search-bar {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 8px;
-  margin: 0;
-  color: white;
-  outline: none;
+  flex: 1; border: none; background: transparent; padding: 8px; color: white; outline: none;
 }
-
 .search-group .btn-scan-search {
-  border: none;
-  background: transparent;
-  font-size: 18px;
-  padding: 0 10px;
-  cursor: pointer;
+  border: none; background: transparent; font-size: 18px; padding: 0 10px; cursor: pointer;
 }
 
 /* =========================================
    5. DEVICE CARDS
    ========================================= */
 .card { 
-  background: var(--card); 
-  padding: 20px; 
-  border-radius: 16px; 
-  border: 2px solid transparent; 
-  cursor: pointer; 
-  transition: 0.2s; 
+  background: var(--card); padding: 20px; border-radius: 16px; 
+  border: 2px solid transparent; cursor: pointer; transition: 0.2s; 
 }
 .card:hover { border-color: var(--border); }
 .card.active { border-color: var(--primary); background: #243147; }
 
-.card-sn { 
-  font-weight: 700; 
-  display: flex; 
-  justify-content: space-between; 
-  margin-bottom: 10px; 
-  font-size: 15px; 
-  align-items: center;
-}
-
-/* Tags */
+.card-sn { font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; align-items: center; }
 .tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; color: white; font-weight: 800; }
 .V6 { background: var(--v6); }
 
-/* IMEI Styling */
 .card-imeis { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
-.imei-row { 
-  font-size: 13px; color: var(--text-muted); 
-  background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; 
-}
+.imei-row { font-size: 13px; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; }
 
-/* Location/Status Badge */
 .card-location { 
   color: var(--primary); font-weight: 800; font-size: 13px; 
   text-transform: uppercase; background: rgba(59, 130, 246, 0.1); 
@@ -240,459 +152,160 @@ body {
 }
 
 /* =========================================
-   6. DETAILS SHEET (Modal/Drawer)
+   6. PAGINATION
+   ========================================= */
+.pagination-bar {
+  display: flex; justify-content: center; align-items: center; gap: 15px;
+  margin-top: 20px; padding: 15px; background: var(--card);
+  border-radius: 12px; border: 1px solid var(--border);
+}
+.page-info { text-align: center; font-size: 14px; font-weight: bold; color: white; }
+.page-info small { color: #94a3b8; font-weight: normal; }
+
+.btn-page {
+  background: var(--primary); color: white; border: none; 
+  padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;
+}
+.btn-page:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+
+/* =========================================
+   7. DESKTOP HISTORY DRAWER (PC Only)
+   ========================================= */
+.desktop-history {
+  display: flex; /* Default for desktop */
+  width: 300px;
+  background: #0b1120;
+  border-left: 1px solid var(--border);
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.drawer-header h3 { margin: 0; font-size: 16px; }
+.drawer-header button { background: transparent; border: none; color: white; cursor: pointer; }
+
+/* Log Entries */
+.log-entry { margin-bottom: 20px; padding-left: 15px; border-left: 2px solid var(--primary); position: relative; }
+.log-entry::after { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; background: var(--primary); border-radius: 50%; }
+.date { font-size: 11px; color: #64748b; font-weight: 600; }
+.note-text { background: var(--card); padding: 8px; border-radius: 6px; margin-top: 5px; font-style: italic; color: #94a3b8; font-size: 12px; }
+
+/* =========================================
+   8. MOBILE DETAILS SHEET (Phone Only)
    ========================================= */
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.8); z-index: 1500;
-  display: flex; justifyContent: center; alignItems: center;
   backdrop-filter: blur(2px);
 }
 
 .details-sheet {
-  display: flex;
-  flex-direction: column;
-  max-height: 85vh;
-  width: 95%;
-  max-width: 500px;
-  background: #1e293b;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column;
+  background: #0f172a; overflow: hidden;
+  border: 1px solid #334155; box-shadow: 0 -20px 50px rgba(0,0,0,0.5);
+  
+  /* Swipe Animation Props */
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
 }
+.details-sheet.dragging { transition: none !important; }
 
-.sheet-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 15px 20px; background: #0f172a; border-bottom: 1px solid #334155;
+/* Content Styles */
+.sheet-header-modern { padding: 10px 24px 20px 24px; background: #1e293b; border-bottom: 1px solid #334155; }
+.sheet-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sheet-title-row h2 { margin: 0; font-size: 24px; color: white; }
+.status-pill { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; text-transform: uppercase; }
+.status-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.status-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+
+.sheet-scroll-content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* Data Grid in Sheet */
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px; }
+.data-box { background: #1e293b; padding: 12px; border-radius: 12px; border: 1px solid #334155; }
+.data-box .label { display: block; font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+.data-box .value { font-size: 14px; color: white; font-family: monospace; }
+
+/* Timeline in Sheet */
+.timeline-section h4 { margin: 0 0 15px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; }
+.timeline-container { border-left: 2px solid #334155; margin-left: 8px; padding-left: 24px; }
+.timeline-item { position: relative; margin-bottom: 24px; }
+.timeline-dot { position: absolute; left: -31px; top: 4px; width: 12px; height: 12px; background: #3b82f6; border-radius: 50%; border: 2px solid #0f172a; }
+.t-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.t-status { font-weight: 700; color: white; font-size: 15px; }
+.t-date { font-size: 12px; color: #64748b; }
+.t-note { font-size: 13px; color: #94a3b8; background: #1e293b; padding: 8px 12px; border-radius: 8px; margin-top: 6px; }
+
+/* Sheet Footer */
+.sheet-footer { 
+  padding: 16px 24px; background: #1e293b; border-top: 1px solid #334155; 
+  padding-bottom: max(16px, env(safe-area-inset-bottom)); 
 }
-.sheet-header h3 { margin: 0; color: white; }
-.btn-close-sheet { background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; }
-
-.sheet-info { padding: 20px; background: #1e293b; }
-.info-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
-.info-row .label { color: #94a3b8; font-size: 14px; }
-.info-row .value { color: white; font-weight: 500; font-size: 14px; }
-.status-badge { color: #3b82f6 !important; font-weight: bold; }
-
-.sheet-actions { padding: 0 20px 20px 20px; }
-.btn-edit-device {
-  width: 100%; padding: 12px; background: #3b82f6; color: white;
-  border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;
-}
-
-.sheet-history {
-  flex: 1; padding: 20px; background: #0f172a;
-  overflow-y: auto; border-top: 1px solid #334155;
-}
-.sheet-history h4 { margin-top: 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; }
-
-.history-item { margin-bottom: 15px; padding-left: 10px; border-left: 2px solid var(--primary); }
-.h-date { font-size: 11px; color: #64748b; }
-.h-status { font-weight: bold; color: #e2e8f0; font-size: 13px; }
-.h-note { font-size: 12px; color: #94a3b8; margin-top: 2px; font-style: italic; }
-
-/* Generic Modal Content (For Import Results) */
-.modal-content {
-  background: #1e293b; padding: 25px; border-radius: 15px; 
-  width: 90%; max-width: 400px; text-align: center; border: 1px solid var(--border);
+.btn-edit-action { 
+  width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; 
+  border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; 
 }
 
 /* =========================================
-   7. FULLSCREEN SCANNER
+   9. SCANNERS & RESULTS
    ========================================= */
 .scanner-overlay {
-  position: fixed; top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: #000;
-  z-index: 9999;
-  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: #000; z-index: 9999; display: flex; flex-direction: column;
 }
+.scanner-modal { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; }
+.camera-viewport { flex: 1; width: 100%; height: 100%; overflow: hidden; background: black; }
+.camera-viewport video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+.scanner-controls { position: absolute; bottom: 50px; left: 0; width: 100%; text-align: center; z-index: 10000; pointer-events: none; }
+.btn-close-scanner { pointer-events: auto; background: rgba(239, 68, 68, 0.9); color: white; border: 3px solid rgba(255,255,255,0.5); padding: 15px 40px; border-radius: 50px; font-weight: 800; cursor: pointer; backdrop-filter: blur(4px); }
+#reader__dashboard_section_csr span, #reader__dashboard_section_swaplink { display: none !important; }
 
-.scanner-modal {
-  width: 100%; height: 100%;
-  position: relative; display: flex; flex-direction: column;
-}
-
-.camera-viewport {
-  flex: 1; width: 100%; height: 100%;
-  overflow: hidden; background: black;
-}
-
-/* Force video to cover screen properly */
-.camera-viewport video {
-  width: 100% !important; height: 100% !important; object-fit: cover !important;
-}
-
-.scanner-controls {
-  position: absolute; bottom: 50px; left: 0; width: 100%;
-  text-align: center; z-index: 10000; pointer-events: none;
-}
-
-.btn-close-scanner {
-  pointer-events: auto;
-  background: rgba(220, 38, 38, 0.9);
-  color: white; border: 3px solid rgba(255,255,255,0.5);
-  padding: 15px 40px; border-radius: 50px;
-  font-weight: 800; font-size: 18px; text-transform: uppercase;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-  cursor: pointer; backdrop-filter: blur(4px);
-}
-
-/* Hide library internals */
-#reader__dashboard_section_csr span, 
-#reader__dashboard_section_swaplink { display: none !important; }
+.result-box { padding: 25px; border-radius: 15px; text-align: center; }
 
 /* =========================================
-   8. MOBILE RESPONSIVENESS
+   10. MOBILE RESPONSIVENESS (BREAKPOINTS)
    ========================================= */
-
-/* Default State */
 .btn-mobile-menu { display: none; }
 .overlay-backdrop { display: none; }
 
 @media (max-width: 768px) {
-  .app-shell {
-    display: block; /* Stack layout */
-    height: 100vh; overflow-y: scroll; -webkit-overflow-scrolling: touch;
-  }
-
-  /* Backdrop for Sidebar */
-  .overlay-backdrop {
-    display: block; position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%; background: rgba(0,0,0,0.5);
-    z-index: 900; backdrop-filter: blur(2px);
-  }
-
-  /* Sidebar Slide-in */
-  .sidebar {
-    position: fixed; top: 0; left: 0;
-    height: 100vh; width: 85%; z-index: 1000;
-    transform: translateX(-100%); transition: transform 0.3s ease-in-out;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
-    display: block !important; /* Override flex */
-  }
-  .sidebar.mobile-open { transform: translateX(0); }
-
-  /* Content Adjustments */
-  .content { 
-    width: 100%; padding: 20px; padding-bottom: 100px;
-  }
-
-  /* Header Button */
-  .btn-mobile-menu {
-    display: block; background: #3b82f6; border: none; color: white;
-    padding: 10px 15px; border-radius: 4px; font-size: 16px;
-    margin-right: 10px; cursor: pointer; font-weight: bold;
-  }
-
+  /* 1. Layout Changes */
+  .app-shell { display: block; height: 100vh; overflow-y: scroll; -webkit-overflow-scrolling: touch; }
   .grid { grid-template-columns: 1fr; }
   
-  /* Details Sheet - Bottom Sheet Style */
-  .details-sheet {
-    position: absolute; bottom: 0;
-    width: 100%; max-width: 100%; border-radius: 20px 20px 0 0;
-    border: none; border-top: 1px solid var(--primary);
+  /* 2. Hide Desktop Elements */
+  .desktop-history { display: none !important; }
+
+  /* 3. Mobile Sidebar (Slide-in) */
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh; width: 85%; z-index: 1000;
+    transform: translateX(-100%); transition: transform 0.3s ease-in-out;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5); display: block !important;
   }
-}
-/* =========================================
-   MODERN DETAILS SHEET (Responsive)
-   ========================================= */
+  .sidebar.mobile-open { transform: translateX(0); }
+  .overlay-backdrop { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; backdrop-filter: blur(2px); }
 
-/* 1. Base Styles (Shared) */
-.details-sheet {
-  display: flex;
-  flex-direction: column;
-  background: #0f172a;
-  overflow: hidden;
-  border: 1px solid #334155;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  will-change: transform;
-}
+  /* 4. Content Adjustments */
+  .content { width: 100%; padding: 20px; padding-bottom: 100px; }
+  .btn-mobile-menu { display: block; background: #3b82f6; border: none; color: white; padding: 10px 15px; border-radius: 4px; font-size: 16px; margin-right: 10px; cursor: pointer; font-weight: bold; }
 
-/* 2. MOBILE STYLES (Default - The "Swipe Sheet") */
-@media (max-width: 768px) {
+  /* 5. Mobile Bottom Sheet Styling */
   .details-sheet {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-width: 100%; /* Force full width */
-    height: 85vh;    /* Tall sheet */
-    border-radius: 24px 24px 0 0;
-    border-bottom: none;
-    border-left: none;
-    border-right: none;
-    
-    /* Animation for appearing */
+    position: absolute; bottom: 0; left: 0; width: 100%; max-width: 100%; height: 85vh;
+    border-radius: 24px 24px 0 0; border-bottom: none; border-left: none; border-right: none;
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-
-  /* Show the Handle ONLY on Mobile */
-  .sheet-handle-bar {
-    display: flex; /* Show it */
-    width: 100%;
-    padding: 12px 0;
-    justify-content: center;
-    background: #1e293b;
-    cursor: grab;
-  }
-  
-  .sheet-handle {
-    width: 40px;
-    height: 5px;
-    background: #475569;
-    border-radius: 10px;
-  }
+  /* Show Drag Handle on Mobile */
+  .sheet-handle-bar { display: flex; width: 100%; padding: 12px 0; justify-content: center; background: #1e293b; cursor: grab; }
+  .sheet-handle { width: 40px; height: 5px; background: #475569; border-radius: 10px; }
 }
 
-/* 3. DESKTOP STYLES (The "Center Modal") */
 @media (min-width: 769px) {
-  .modal-overlay {
-    /* Ensure the overlay centers items */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-  }
-
-  .details-sheet {
-    position: relative; /* Relative to the flex container */
-    width: 500px;       /* Fixed nice width */
-    max-height: 85vh;   /* Don't go off screen */
-    height: auto;       /* Fit content */
-    border-radius: 20px; /* Full rounded corners */
-    bottom: auto;       /* Reset mobile positioning */
-    left: auto;
-    transform: none !important; /* DISABLE SWIPE TRANSFORM ON DESKTOP */
-  }
-
-  /* Hide the Swipe Handle on Desktop (It's useless there) */
-  .sheet-handle-bar {
-    display: none; 
-  }
-
-  /* Add a proper close button for Desktop if missing */
-  .sheet-header-modern {
-    padding-top: 20px; /* Give it space since handle is gone */
-    cursor: default; /* Remove drag cursor */
-  }
-}
-
-/* ----------------------------------------------------
-   INTERNAL CONTENT STYLES (Shared) 
-   ---------------------------------------------------- */
-
-.sheet-header-modern {
-  padding: 10px 24px 20px 24px;
-  background: #1e293b;
-  border-bottom: 1px solid #334155;
-}
-
-.sheet-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.sheet-title-row h2 {
-  margin: 0;
-  font-size: 24px;
-  color: white;
-  letter-spacing: -0.5px;
-}
-
-.status-pill {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.status-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-.status-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-
-.sheet-scroll-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-.data-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 30px;
-}
-
-.data-box {
-  background: #1e293b;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid #334155;
-}
-.data-box .label {
-  display: block;
-  font-size: 11px;
-  text-transform: uppercase;
-  color: #94a3b8;
-  margin-bottom: 4px;
-  font-weight: 700;
-}
-.data-box .value {
-  font-size: 14px;
-  color: white;
-  font-family: monospace;
-}
-
-/* Timeline */
-.timeline-section h4 {
-  margin: 0 0 15px 0;
-  color: #94a3b8;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.timeline-container {
-  border-left: 2px solid #334155;
-  margin-left: 8px;
-  padding-left: 24px;
-}
-
-.timeline-item { position: relative; margin-bottom: 24px; }
-
-.timeline-dot {
-  position: absolute; left: -31px; top: 4px;
-  width: 12px; height: 12px;
-  background: #3b82f6; border-radius: 50%;
-  border: 2px solid #0f172a;
-}
-
-.t-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
-.t-status { font-weight: 700; color: white; font-size: 15px; }
-.t-date { font-size: 12px; color: #64748b; }
-.t-note {
-  font-size: 13px; color: #94a3b8;
-  background: #1e293b; padding: 8px 12px;
-  border-radius: 8px; margin-top: 6px; line-height: 1.4;
-}
-
-/* Footer */
-.sheet-footer {
-  padding: 16px 24px;
-  background: #1e293b;
-  border-top: 1px solid #334155;
-  /* Safe area for iPhone home bar */
-  padding-bottom: max(16px, env(safe-area-inset-bottom)); 
-}
-
-.btn-edit-action {
-  width: 100%;
-  padding: 14px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-}
-.btn-edit-action:hover { background: #2563eb; }
-
-/* Desktop Adjustment (Center Modal instead of Bottom Sheet) */
-@media (min-width: 769px) {
-  .details-sheet {
-    position: relative;
-    bottom: auto;
-    height: auto;
-    max-height: 85vh;
-    border-radius: 20px;
-    border: 1px solid #334155;
-    animation: fadeIn 0.2s ease;
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-}
-/* =========================================
-   0. GLOBAL RESET (Fixes Horizontal Scroll)
-   ========================================= */
-* {
-  box-sizing: border-box; /* Crucial: Includes padding in width */
-  -webkit-tap-highlight-color: transparent;
-}
-
-html, body {
-  width: 100%;
-  overflow-x: hidden; /* Stop horizontal play */
-  overscroll-behavior-y: none; /* Disables "pull to refresh" bounce on main body */
-}
-
-/* ... Existing .details-sheet styles ... */
-
-.details-sheet {
-  /* ... keep your existing properties ... */
-  /* ADD THESE for Smooth Animation */
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  will-change: transform;
-}
-
-/* When the user is actively dragging, remove the delay so it follows the finger instantly */
-.details-sheet.dragging {
-  transition: none !important;
-}
-
-/* ... Existing styles ... */
-
-/* Pagination Bar Styling */
-.pagination-bar {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-  margin-top: 20px;
-  padding: 15px;
-  background: var(--card);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-}
-
-.page-info {
-  text-align: center;
-  font-size: 14px;
-  font-weight: bold;
-  color: white;
-}
-.page-info small { color: #94a3b8; font-weight: normal; }
-
-.btn-page {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.btn-page:disabled {
-  background: #334155;
-  color: #64748b;
-  cursor: not-allowed;
-}
-
-/* Result Box for Imports */
-.result-box {
-  padding: 25px; 
-  border-radius: 15px;
+  /* Hide Mobile Sheet elements on PC */
+  .modal-overlay { display: none !important; } /* This ensures the bottom sheet never pops up on PC */
+  .sheet-handle-bar { display: none; }
 }
