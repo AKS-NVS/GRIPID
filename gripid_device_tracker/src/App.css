@@ -395,3 +395,123 @@ body {
   
   .scanner-box, .scanner-box-search { width: 100% !important; }
 }
+
+/* --- UTILITY BUTTONS (Import/Export) --- */
+.btn-utility {
+  flex: 1;
+  padding: 8px;
+  background: #334155;
+  color: white;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.btn-utility:hover { background: #475569; }
+
+/* --- SEARCH & FILTER GROUP --- */
+.search-group {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  background: var(--card);
+  padding: 5px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  align-items: center;
+}
+
+.filter-select {
+  background: transparent;
+  color: white;
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 0 10px;
+  font-weight: bold;
+  cursor: pointer;
+  outline: none;
+  height: 100%;
+}
+.filter-select option { background: var(--bg); }
+
+/* Override search-bar to fit in group */
+.search-group .search-bar {
+  border: none;
+  background: transparent;
+  padding: 8px;
+  margin: 0;
+  box-shadow: none; /* Remove any default shadow */
+}
+
+.search-group .btn-scan-search {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  padding: 0 10px;
+}
+
+/* --- CUSTOM CAMERA OVERLAY --- */
+.scanner-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.95);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.scanner-modal {
+  width: 100%;
+  max-width: 450px;
+  background: #000;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-viewport {
+  width: 100%;
+  height: 350px; /* Square-ish viewport */
+  background: #000;
+}
+
+/* Hide Html5Qrcode's default ugly text/links */
+#reader__dashboard_section_csr span, 
+#reader__dashboard_section_swaplink { display: none !important; }
+
+.scanner-controls {
+  padding: 20px;
+  text-align: center;
+  background: #1e293b;
+  color: white;
+}
+
+.btn-close-scanner {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 12px 40px;
+  border-radius: 30px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+}
+
+/* Generic Modal (for Import Results) */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8); z-index: 2000;
+  display: flex; justifyContent: center; alignItems: center;
+}
+.modal-content {
+  background: #1e293b; padding: 25px; borderRadius: 15px; width: 90%; maxWidth: 400px;
+  text-align: center; border: 1px solid var(--border);
+}

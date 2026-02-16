@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const xlsx = require('xlsx'); // <--- ADDED: Required for Excel
+const xlsx = require('xlsx'); // Required for Excel
 require('dotenv').config();
 
 const app = express();
@@ -67,7 +67,7 @@ app.get('/api/devices/:sn/history', async (req, res) => {
   }
 });
 
-// POST New Device (Manual Entry - NOW CHECKS DUPLICATES)
+// POST New Device (Manual Entry - Checks Duplicates)
 app.post('/api/devices', async (req, res) => {
   try {
     const { sn_no, imei_1, imei_2, status, note } = req.body;
@@ -148,7 +148,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     for (let i = 0; i < rawData.length; i++) {
       const row = rawData[i];
 
-      // Flexible Column Names (Handles 'SN', 'sn_no', 'Serial Number', etc.)
+      // Flexible Column Names
       const sn = (row.sn_no || row.SN || row.Serial || row.sn || "").toString().trim();
       const imei1 = (row.imei_1 || row.IMEI1 || row.imei1 || "").toString().trim();
       const imei2 = (row.imei_2 || row.IMEI2 || row.imei2 || "").toString().trim();
@@ -161,7 +161,6 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       }
 
       // 3. BUILD DUPLICATE CHECK QUERY
-      // We check if SN exists OR if a non-empty IMEI exists
       const duplicateConditions = [{ sn_no: sn }];
       if (imei1) duplicateConditions.push({ imei_1: imei1 });
       if (imei2) duplicateConditions.push({ imei_2: imei2 });
@@ -170,7 +169,6 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
       if (existingDevice) {
         skippedCount++;
-        // Determine why we skipped it for the log
         let reason = "Duplicate Data";
         if (existingDevice.sn_no === sn) reason = "SN already exists";
         else reason = "IMEI already exists";
@@ -209,6 +207,37 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
+  }
+});
+
+// --- NEW ROUTE: EXCEL EXPORT (Download DB) ---
+app.get('/api/export', async (req, res) => {
+  try {
+    const devices = await Device.find().sort({ _id: -1 });
+
+    // Format data for Excel
+    const data = devices.map(d => ({
+      "SN": d.sn_no,
+      "IMEI 1": d.imei_1,
+      "IMEI 2": d.imei_2,
+      "Status": d.current_status,
+      // Just showing creation date; for note we'd need to fetch history but keep it simple for speed
+      "Added On": d._id.getTimestamp() 
+    }));
+
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(data);
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Inventory");
+
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="GripID_Inventory.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Export failed");
   }
 });
 
