@@ -1,5 +1,18 @@
-node_modules/
 
+# Dependencies
+node_modules
+/gripid_device_tracker/node_modules
+/gripid_backend/node_modules
+
+# Environment Variables (Secrets)
 .env
+.DS_Store
 
-dist/
+# Build Output
+/gripid_device_tracker/build
+/gripid_device_tracker/dist
+
+# Excel Uploads
+uploads/
+*.xlsx
+*.xls
