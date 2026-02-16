@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import './App.css';
 
@@ -11,9 +11,11 @@ function App() {
   const [isScanningSearch, setIsScanningSearch] = useState(false);
   const [isScanningAutoFill, setIsScanningAutoFill] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  
-  // --- NEW: Mobile Menu State ---
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // --- NEW: Excel Import State ---
+  const [uploadResult, setUploadResult] = useState(null); // Stores success/error logs
+  const fileInputRef = useRef(null); // Reference to hidden file input
   
   const [formData, setFormData] = useState({ 
     sn_no: '', imei_1: '', imei_2: '', status: '', note: '' 
@@ -27,6 +29,40 @@ function App() {
   }, []);
 
   useEffect(() => { loadDevices(); }, [loadDevices]);
+
+  // --- NEW: Handle Excel Upload ---
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const data = new FormData();
+    data.append('file', file);
+
+    try {
+      // Simple loading feedback
+      const btn = document.activeElement;
+      if(btn) btn.innerText = "⏳ Uploading...";
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: data
+      });
+      
+      const result = await res.json();
+      
+      if (!res.ok) throw new Error(result.message || "Upload failed");
+
+      setUploadResult(result); // Show the results modal
+      loadDevices(); // Refresh the list immediately
+      
+    } catch (err) {
+      alert("Upload Error: " + err.message);
+    } finally {
+      // Reset input so you can select the same file again if needed
+      e.target.value = null; 
+      if(document.activeElement) document.activeElement.innerText = "📂 Import Excel";
+    }
+  };
 
   const loadHistory = (sn) => {
     setHistory([]);
@@ -87,7 +123,7 @@ function App() {
       note: ''
     });
     loadHistory(device.sn_no);
-    setMobileMenuOpen(true); // Automatically open sidebar on mobile
+    setMobileMenuOpen(true); 
   };
 
   const resetForm = () => {
@@ -110,20 +146,21 @@ function App() {
       });
       
       const updatedDevice = await res.json();
+      
+      if (!res.ok) throw new Error(updatedDevice.message || "Save failed");
 
       if (isEditing) {
         setDevices(prev => prev.map(d => d._id === updatedDevice._id ? updatedDevice : d));
-        setHistory(updatedDevice.history || []); // Fallback to empty if undefined
+        setHistory(updatedDevice.history || []); 
         setFormData(p => ({ ...p, note: '' }));
       } else {
         setDevices(prev => [updatedDevice, ...prev]);
         resetForm();
       }
-      // Close sidebar on mobile after save
       if(window.innerWidth < 768) setMobileMenuOpen(false);
 
     } catch (err) {
-      console.error("Save failed:", err);
+      alert("Error: " + err.message);
     }
   };
 
@@ -147,10 +184,9 @@ function App() {
 
   return (
     <div className="app-shell">
-      {/* SIDEBAR: Added 'mobile-open' logic */}
+      {/* SIDEBAR */}
       <aside className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         
-        {/* Mobile Close Button (Hidden on Desktop) */}
         <div className="mobile-close-btn" style={{textAlign:'right', marginBottom:'10px', display: mobileMenuOpen ? 'block' : 'none'}}>
           <button 
             onClick={() => setMobileMenuOpen(false)}
@@ -168,6 +204,24 @@ function App() {
         </button>
         {isScanningAutoFill && <div id="form-reader" className="scanner-box"></div>}
        
+        {/* --- NEW: Import Excel Button Section --- */}
+        <div style={{marginTop: '20px', borderTop: '1px solid #334155', paddingTop: '15px'}}>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            accept=".xlsx, .xls" 
+            style={{display: 'none'}} 
+          />
+          <button 
+            className="btn-new-entry" 
+            style={{backgroundColor: '#2563eb', fontSize: '13px'}}
+            onClick={() => fileInputRef.current.click()}
+          >
+            📂 Import Excel
+          </button>
+        </div>
+
         <form className="add-form" onSubmit={handleSave} style={{marginTop: '20px'}}>
           <div className="input-group"><label>SN Number</label><input value={formData.sn_no} onChange={e => setFormData({...formData, sn_no: e.target.value})} required /></div>
           <div className="input-group"><label>IMEI 1</label><input value={formData.imei_1} onChange={e => setFormData({...formData, imei_1: e.target.value})} /></div>
@@ -180,7 +234,6 @@ function App() {
 
       <main className="content">
         <header className="top-bar">
-          {/* NEW: Mobile Menu Toggle Button */}
           <button 
             className="btn-mobile-menu" 
             onClick={() => setMobileMenuOpen(true)}
@@ -237,6 +290,61 @@ function App() {
             )}
           </div>
         </section>
+      )}
+
+      {/* --- NEW: Upload Results Modal --- */}
+      {uploadResult && (
+        <div style={{
+          position:'fixed', top:0, left:0, width:'100%', height:'100%', 
+          background:'rgba(0,0,0,0.8)', zIndex:2000, 
+          display:'flex', justifyContent:'center', alignItems:'center'
+        }}>
+          <div style={{
+            background:'#1e293b', padding:'20px', borderRadius:'10px', 
+            width:'90%', maxWidth:'500px', maxHeight:'80vh', overflowY:'auto',
+            border: '1px solid #334155'
+          }}>
+            <h3 style={{color:'white', marginTop:0, marginBottom:'15px'}}>Import Results</h3>
+            
+            {/* Summary Counters */}
+            <div style={{display:'flex', gap:'10px', marginBottom:'20px'}}>
+              <div style={{background:'#10b981', padding:'10px', borderRadius:'5px', flex:1, textAlign:'center'}}>
+                <div style={{fontSize:'24px', fontWeight:'bold', color:'white'}}>{uploadResult.added}</div>
+                <div style={{fontSize:'12px', color:'#ecfdf5'}}>Added</div>
+              </div>
+              <div style={{background:'#f59e0b', padding:'10px', borderRadius:'5px', flex:1, textAlign:'center'}}>
+                <div style={{fontSize:'24px', fontWeight:'bold', color:'white'}}>{uploadResult.skipped}</div>
+                <div style={{fontSize:'12px', color:'#fffbeb'}}>Skipped</div>
+              </div>
+            </div>
+            
+            {/* Detailed Logs */}
+            <h4 style={{color:'#94a3b8', margin:'0 0 10px 0', fontSize:'14px'}}>Details:</h4>
+            <div style={{background:'#0f172a', padding:'10px', borderRadius:'5px', maxHeight:'200px', overflowY:'auto'}}>
+              {uploadResult.logs.filter(l => l.status !== "Success").length === 0 ? (
+                <p style={{color:'#94a3b8', fontSize:'13px', margin:0}}>✅ All rows processed successfully.</p>
+              ) : (
+                uploadResult.logs.filter(l => l.status !== "Success").map((l, i) => (
+                  <div key={i} style={{borderBottom:'1px solid #334155', padding:'8px 0', fontSize:'12px', color:'#ef4444'}}>
+                    <strong>Row {l.row}:</strong> {l.reason} <br/>
+                    <span style={{color:'#64748b'}}>SN: {l.sn || 'N/A'}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button 
+              onClick={() => setUploadResult(null)}
+              style={{
+                marginTop:'20px', width:'100%', padding:'12px', 
+                background:'#3b82f6', color:'white', border:'none', 
+                borderRadius:'8px', cursor:'pointer', fontWeight:'bold'
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Backdrop for Mobile Menu */}

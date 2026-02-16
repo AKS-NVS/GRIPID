@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
-const fs = require('fs'); 
+const fs = require('fs');
+const xlsx = require('xlsx'); // <--- ADDED: Required for Excel
 require('dotenv').config();
 
 const app = express();
@@ -20,24 +21,23 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- SCHEMAS ---
 
-// 1. Device Schema (Keeps only current status)
+// 1. Device Schema
 const DeviceSchema = new mongoose.Schema({
   sn_no: String,
   imei_1: String,
   imei_2: String,
   current_status: String
-  // Removed 'history' array because you use a separate collection
 });
 const Device = mongoose.model('Device', DeviceSchema);
 
-// 2. History Schema (Connects to your existing 'histories' collection)
+// 2. History Schema
 const HistorySchema = new mongoose.Schema({
   device_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
   sn_no: String,
   status: String,
   note: String,
   date: { type: Date, default: Date.now }
-}, { collection: 'histories' }); // <--- CRITICAL: Links to your specific collection name
+}, { collection: 'histories' }); 
 
 const History = mongoose.model('History', HistorySchema);
 
@@ -53,15 +53,13 @@ app.get('/api/devices', async (req, res) => {
   }
 });
 
-// GET Single Device History (Reads from 'histories' collection)
+// GET Single Device History
 app.get('/api/devices/:sn/history', async (req, res) => {
   try {
     const rawSn = req.params.sn.trim();
-    
-    // Search the 'histories' collection for this SN (Case Insensitive)
     const logs = await History.find({ 
       sn_no: { $regex: new RegExp(`^${rawSn}$`, 'i') } 
-    }).sort({ date: -1 }); // Show newest first
+    }).sort({ date: -1 });
 
     res.json(logs);
   } catch (err) {
@@ -69,18 +67,24 @@ app.get('/api/devices/:sn/history', async (req, res) => {
   }
 });
 
-// POST New Device
+// POST New Device (Manual Entry - NOW CHECKS DUPLICATES)
 app.post('/api/devices', async (req, res) => {
   try {
     const { sn_no, imei_1, imei_2, status, note } = req.body;
     
-    // 1. Create Device
+    // 1. Check if SN already exists
+    const existing = await Device.findOne({ sn_no: sn_no });
+    if (existing) {
+      return res.status(400).json({ message: "A device with this Serial Number already exists!" });
+    }
+
+    // 2. Create Device
     const newDevice = new Device({
       sn_no, imei_1, imei_2, current_status: status
     });
     const savedDevice = await newDevice.save();
 
-    // 2. Create Initial History Entry in separate collection
+    // 3. Create Initial History Entry
     const firstHistory = new History({
       device_id: savedDevice._id,
       sn_no: sn_no,
@@ -96,7 +100,7 @@ app.post('/api/devices', async (req, res) => {
   }
 });
 
-// PUT Update Device (Updates Device + Adds to History Collection)
+// PUT Update Device
 app.put('/api/devices/:id', async (req, res) => {
   try {
     const { status, note, sn_no, ...otherData } = req.body;
@@ -112,7 +116,7 @@ app.put('/api/devices/:id', async (req, res) => {
     if (updatedDevice) {
       const newHistory = new History({
         device_id: updatedDevice._id,
-        sn_no: updatedDevice.sn_no, // Use the SN from the device to ensure linking
+        sn_no: updatedDevice.sn_no, 
         status: status,
         note: note || '',
         date: new Date()
@@ -120,9 +124,90 @@ app.put('/api/devices/:id', async (req, res) => {
       await newHistory.save();
     }
 
-    // 3. Return the device (Frontend will fetch history separately)
     res.json(updatedDevice);
   } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// --- NEW ROUTE: EXCEL UPLOAD ---
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+    // 1. Read Excel File
+    const workbook = xlsx.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0]; // Read first sheet
+    const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let addedCount = 0;
+    let skippedCount = 0;
+    const logs = [];
+
+    // 2. Loop through every row
+    for (let i = 0; i < rawData.length; i++) {
+      const row = rawData[i];
+
+      // Flexible Column Names (Handles 'SN', 'sn_no', 'Serial Number', etc.)
+      const sn = (row.sn_no || row.SN || row.Serial || row.sn || "").toString().trim();
+      const imei1 = (row.imei_1 || row.IMEI1 || row.imei1 || "").toString().trim();
+      const imei2 = (row.imei_2 || row.IMEI2 || row.imei2 || "").toString().trim();
+      const status = row.status || row.Status || "In Stock";
+      const note = row.note || row.Note || "Imported from Excel";
+
+      if (!sn) {
+        logs.push({ row: i + 2, status: "Failed", reason: "Missing Serial Number" });
+        continue;
+      }
+
+      // 3. BUILD DUPLICATE CHECK QUERY
+      // We check if SN exists OR if a non-empty IMEI exists
+      const duplicateConditions = [{ sn_no: sn }];
+      if (imei1) duplicateConditions.push({ imei_1: imei1 });
+      if (imei2) duplicateConditions.push({ imei_2: imei2 });
+
+      const existingDevice = await Device.findOne({ $or: duplicateConditions });
+
+      if (existingDevice) {
+        skippedCount++;
+        // Determine why we skipped it for the log
+        let reason = "Duplicate Data";
+        if (existingDevice.sn_no === sn) reason = "SN already exists";
+        else reason = "IMEI already exists";
+        
+        logs.push({ row: i + 2, sn: sn, status: "Skipped", reason: reason });
+      } else {
+        // 4. ADD NEW DEVICE
+        const newDevice = new Device({ sn_no: sn, imei_1: imei1, imei_2: imei2, current_status: status });
+        const saved = await newDevice.save();
+        
+        // 5. ADD HISTORY ENTRY
+        const hist = new History({
+          device_id: saved._id,
+          sn_no: sn,
+          status: status,
+          note: note,
+          date: new Date()
+        });
+        await hist.save();
+
+        addedCount++;
+        logs.push({ row: i + 2, sn: sn, status: "Success", reason: "Added" });
+      }
+    }
+
+    // 6. Delete the temp file
+    fs.unlinkSync(req.file.path);
+
+    res.json({ 
+      message: "Import Complete", 
+      added: addedCount, 
+      skipped: skippedCount, 
+      logs: logs 
+    });
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -132,7 +217,6 @@ if (process.env.NODE_ENV === 'production') {
   const frontendRoot = path.join(__dirname, '../gripid_device_tracker');
   let frontendPath = path.join(frontendRoot, 'dist');
   
-  // Auto-detect folder name
   if (!fs.existsSync(frontendPath)) {
     frontendPath = path.join(frontendRoot, 'build');
   }
