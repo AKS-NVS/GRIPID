@@ -28,13 +28,17 @@ function App() {
   const [uploadResult, setUploadResult] = useState(null);
   const fileInputRef = useRef(null);
   
+  // --- NEW: SWIPE LOGIC STATE ---
+  const [sheetDragY, setSheetDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef(0);
+
   const [formData, setFormData] = useState({ 
     sn_no: '', imei_1: '', imei_2: '', status: '', note: '' 
   });
 
   // --- FETCH DEVICES (With Pagination) ---
   const loadDevices = useCallback((pageNo = 1) => {
-    // Add timestamp to prevent caching issues
     fetch(`/api/devices?page=${pageNo}&limit=50&_t=${Date.now()}`)
       .then(res => res.json())
       .then(response => {
@@ -44,7 +48,6 @@ function App() {
           setTotalPages(response.totalPages);
           setTotalCount(response.totalDevices);
         } else {
-          // Fallback if backend sends old array format
           setDevices(Array.isArray(response) ? response : []);
         }
       })
@@ -63,7 +66,6 @@ function App() {
       const html5QrCode = new Html5Qrcode("reader");
       scannerRef.current = html5QrCode;
 
-      // Responsive Scan Box (Wide for Barcodes)
       const qrboxSize = window.innerWidth < 600 
         ? { width: 300, height: 150 } 
         : { width: 500, height: 200 };
@@ -75,13 +77,13 @@ function App() {
         experimentalFeatures: { useBarCodeDetectorIfSupported: true } 
       };
       
-      const allFormats = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ]; // All barcode types
+      const allFormats = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ]; 
 
       html5QrCode.start(
         { facingMode: "environment" }, 
         { ...config, formatsToSupport: allFormats }, 
         (decodedText) => { handleScanSuccess(decodedText, mode); },
-        () => {} // Ignore errors
+        () => {} 
       ).catch(err => {
         console.error("Camera failed", err);
         setIsScanning(false);
@@ -134,7 +136,7 @@ function App() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.message);
       setUploadResult(result);
-      loadDevices(page); // Refresh current page
+      loadDevices(page); 
     } catch (err) { alert("Upload Error: " + err.message); }
     e.target.value = null;
   };
@@ -151,6 +153,7 @@ function App() {
     setSelectedDevice(device);
     setIsEditing(false); 
     loadHistory(device.sn_no);
+    setSheetDragY(0); // Reset drag position on open
   };
 
   const handleEditStart = () => {
@@ -176,11 +179,8 @@ function App() {
     e.preventDefault();
     const method = isEditing ? 'PUT' : 'POST';
     
-    // Logic to find ID if editing
     let targetId = null;
     if (isEditing) {
-        // We find the device in the current list that matches the SN we started editing
-        // This is safe because we populate formData from selectedDevice
         const found = devices.find(d => d.sn_no === formData.sn_no);
         if (found) targetId = found._id;
     }
@@ -199,7 +199,6 @@ function App() {
         setDevices(prev => prev.map(d => d._id === updatedDevice._id ? updatedDevice : d));
         setFormData(p => ({ ...p, note: '' }));
       } else {
-        // Add new device to top of list
         setDevices(prev => [updatedDevice, ...prev]); 
         resetForm();
       }
@@ -214,7 +213,6 @@ function App() {
     return null; 
   };
 
-  // --- FILTERING ---
   const filtered = devices.filter(d => {
     const matchesSearch = (d.sn_no || "").toUpperCase().includes(search.toUpperCase()) ||
                           (d.imei_1 || "").includes(search) || (d.imei_2 || "").includes(search);
@@ -225,6 +223,33 @@ function App() {
     
     return matchesSearch && matchesFilter;
   });
+
+  // --- NEW: TOUCH HANDLERS (Swipe to Close) ---
+  const handleTouchStart = (e) => {
+    dragStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - dragStartY.current;
+    
+    // Only allow dragging DOWN (positive diff)
+    if (diff > 0) {
+      setSheetDragY(diff);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    // If dragged more than 120px down, close it
+    if (sheetDragY > 120) {
+      setSelectedDevice(null); // Close
+    } else {
+      setSheetDragY(0); // Snap back to top
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -286,46 +311,55 @@ function App() {
           ))}
         </div>
 
-        {/* PAGINATION CONTROLS */}
-        <div className="pagination-bar" style={{display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '30px', padding: '20px', background: '#1e293b', borderRadius: '12px', border: '1px solid #334155'}}>
+        {/* PAGINATION */}
+        <div className="pagination-bar">
           <button 
             className="btn-page" 
-            style={{background: page === 1 ? '#334155' : '#3b82f6', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: page === 1 ? 'not-allowed' : 'pointer'}}
             disabled={page === 1} 
             onClick={() => setPage(p => Math.max(1, p - 1))}
           >
             ← Prev
           </button>
-          
-          <span className="page-info" style={{textAlign: 'center', color: 'white', fontWeight: 'bold'}}>
+          <span className="page-info">
             Page {page} of {totalPages} <br/>
-            <small style={{color: '#94a3b8', fontWeight: 'normal'}}>({totalCount} Items)</small>
+            <small>({totalCount} Items)</small>
           </span>
-          
           <button 
             className="btn-page" 
-            style={{background: page >= totalPages ? '#334155' : '#3b82f6', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: page >= totalPages ? 'not-allowed' : 'pointer'}}
             disabled={page >= totalPages} 
             onClick={() => setPage(p => p + 1)}
           >
             Next →
           </button>
         </div>
-
       </main>
 
-      {/* --- NEW: MODERN DETAILS SHEET --- */}
+      {/* --- MODERN DETAILS SHEET (With Swipe) --- */}
       {selectedDevice && !mobileMenuOpen && (
         <div className="modal-overlay" onClick={() => setSelectedDevice(null)}>
-          <div className="modal-content details-sheet" onClick={e => e.stopPropagation()}>
+          <div 
+            className={`modal-content details-sheet ${isDragging ? 'dragging' : ''}`} 
+            onClick={e => e.stopPropagation()}
+            style={{ transform: `translateY(${sheetDragY}px)` }} // Apply the drag move
+          >
             
-            {/* Drag Handle */}
-            <div className="sheet-handle-bar" onClick={() => setSelectedDevice(null)}>
+            {/* Drag Handle - ATTACHED SWIPE LISTENERS HERE */}
+            <div 
+              className="sheet-handle-bar" 
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <div className="sheet-handle"></div>
             </div>
 
-            {/* Header */}
-            <div className="sheet-header-modern">
+            {/* Header - Also swipable for ease of use */}
+            <div 
+              className="sheet-header-modern"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <div className="sheet-title-row">
                 <h2>{selectedDevice.sn_no}</h2>
                 {renderVersionTag(selectedDevice.sn_no)}
@@ -396,7 +430,7 @@ function App() {
       {/* Import Results Modal */}
       {uploadResult && (
         <div className="modal-overlay">
-           <div className="modal-content" style={{padding: '25px', borderRadius: '15px'}}>
+           <div className="modal-content result-box">
              <h3>Import Results</h3>
              <div style={{display:'flex', gap:'10px', marginBottom:'10px'}}>
                <div style={{flex:1, textAlign:'center', background:'#10b981', padding:'10px', borderRadius:'5px'}}>
