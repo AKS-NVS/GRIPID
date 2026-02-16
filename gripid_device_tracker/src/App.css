@@ -26,19 +26,21 @@ body {
    ========================================= */
 .app-shell { 
   display: grid; 
-  grid-template-columns: 280px 1fr 300px; 
+  grid-template-columns: 280px 1fr; /* Sidebar | Content */
   height: 100vh; 
 }
 
 .content { 
   padding: 32px; 
   overflow-y: auto; 
+  position: relative;
 }
 
 .grid { 
   display: grid; 
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
   gap: 16px; 
+  padding-bottom: 50px;
 }
 
 /* =========================================
@@ -49,6 +51,8 @@ body {
   border-right: 1px solid var(--border); 
   background: #0b1120; 
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .brand { 
@@ -73,6 +77,7 @@ body {
   box-sizing: border-box; 
   font-family: inherit;
   resize: none;
+  outline: none;
 }
 
 .input-group label { 
@@ -84,7 +89,7 @@ body {
   font-weight: bold; 
 }
 
-/* Sidebar Buttons */
+/* Buttons */
 .btn-new-entry { 
   width: 100%; 
   padding: 10px; 
@@ -103,13 +108,14 @@ body {
   padding: 12px; 
   background: var(--border); 
   color: white; 
-  border: none; 
+  border: 1px solid #475569;
   border-radius: 8px; 
   cursor: pointer; 
   font-weight: 700; 
-  transition: 0.3s; 
+  margin-bottom: 10px;
+  transition: 0.2s;
 }
-.btn-scan-mode.active { background: var(--danger); }
+.btn-scan-mode:hover { background: #475569; }
 
 .btn-save { 
   width: 100%; 
@@ -122,281 +128,7 @@ body {
   cursor: pointer; 
 }
 
-/* =========================================
-   4. TOP BAR & SEARCH
-   ========================================= */
-.top-bar { 
-  display: flex; 
-  gap: 16px; 
-  margin-bottom: 32px; 
-  position: sticky; 
-  top: 0; 
-  z-index: 10; 
-  background: var(--bg); 
-  padding-bottom: 10px; 
-}
-
-.search-bar { 
-  flex: 1; 
-  padding: 14px; 
-  border-radius: 10px; 
-  border: 1px solid var(--border); 
-  background: var(--card); 
-  color: white; 
-}
-
-.btn-scan-search { 
-  padding: 0 20px; 
-  border-radius: 10px; 
-  background: var(--border); 
-  color: white; 
-  border: 1px solid #475569; 
-  cursor: pointer; 
-  font-weight: bold; 
-}
-
-/* =========================================
-   5. DEVICE CARDS
-   ========================================= */
-.card { 
-  background: var(--card); 
-  padding: 20px; 
-  border-radius: 16px; 
-  border: 2px solid transparent; 
-  cursor: pointer; 
-  transition: 0.2s; 
-}
-.card.active { 
-  border-color: var(--primary); 
-  background: #243147; 
-}
-
-.card-sn { 
-  font-weight: 700; 
-  display: flex; 
-  justify-content: space-between; 
-  margin-bottom: 10px; 
-  font-size: 15px; 
-  align-items: center;
-}
-
-/* Tags */
-.tag { 
-  font-size: 10px; 
-  padding: 2px 8px; 
-  border-radius: 10px; 
-  color: white; 
-  font-weight: 800; 
-}
-.V6 { background: var(--v6); }
-
-/* IMEI Styling */
-.card-imeis { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 4px; 
-  margin: 10px 0; 
-}
-
-.imei-row { 
-  font-size: 13px; 
-  color: var(--text-muted); 
-  background: rgba(255,255,255,0.03); 
-  padding: 4px 8px; 
-  border-radius: 4px; 
-}
-
-/* Location/Status Badge */
-.card-location { 
-  color: var(--primary); 
-  font-weight: 800; 
-  font-size: 13px; 
-  text-transform: uppercase; 
-  background: rgba(59, 130, 246, 0.1); 
-  padding: 6px 12px; 
-  border-radius: 8px; 
-  display: inline-block; 
-}
-
-/* =========================================
-   6. HISTORY DRAWER
-   ========================================= */
-.history-drawer { 
-  background: #0b1120; 
-  border-left: 1px solid var(--border); 
-  padding: 24px; 
-  overflow-y: auto; 
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.drawer-header button {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.log-entry { 
-  padding-left: 15px; 
-  border-left: 2px solid var(--primary); 
-  margin-bottom: 20px; 
-  position: relative; 
-}
-.log-entry::after { 
-  content: ''; 
-  position: absolute; 
-  left: -6px; top: 0; 
-  width: 10px; height: 10px; 
-  background: var(--primary); 
-  border-radius: 50%; 
-}
-
-.date { 
-  font-size: 11px; 
-  color: #64748b; 
-  font-weight: 600; 
-}
-
-.note-text { 
-  font-size: 12px; 
-  color: var(--text-muted); 
-  font-style: italic; 
-  background: var(--card); 
-  padding: 8px; 
-  border-radius: 6px; 
-  margin-top: 5px; 
-}
-
-.empty-msg, .loading-state {
-  color: var(--text-muted);
-  text-align: center;
-  margin-top: 20px;
-}
-
-/* =========================================
-   7. SCANNERS
-   ========================================= */
-.scanner-box, .scanner-box-search { 
-  width: 100%; 
-  margin-bottom: 20px; 
-  border-radius: 12px; 
-  overflow: hidden; 
-  border: 2px solid var(--primary); 
-}
-
-#reader__status_span { color: white !important; }
-#reader__dashboard_section_csr button { 
-  background: var(--primary); 
-  color: white; 
-  border: none; 
-  padding: 5px 10px; 
-  border-radius: 4px; 
-}
-
-/* =========================================
-   8. MOBILE RESPONSIVENESS (FINAL & CLEAN)
-   ========================================= */
-
-/* 1. Mobile Menu Button (Hidden on Desktop) */
-.btn-mobile-menu {
-  display: none;
-}
-
-/* 2. Overlay Backdrop (DEFAULT: HIDDEN ON DESKTOP) */
-.overlay-backdrop {
-  display: none;
-}
-
-/* 3. Mobile Layout Logic */
-@media (max-width: 768px) {
-  .app-shell {
-    /* SCROLL FIX: Force height to viewport and scroll internally */
-    display: block;
-    height: 100vh;
-    overflow-y: scroll; 
-    -webkit-overflow-scrolling: touch;
-    position: relative;
-  }
-
-  /* SHOW BACKDROP ONLY ON MOBILE */
-  .overlay-backdrop {
-    display: block; 
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 900;
-    backdrop-filter: blur(2px);
-  }
-
-  /* SIDEBAR: Hidden by default, slides in from left */
-  .sidebar {
-    position: fixed;
-    top: 0; left: 0;
-    height: 100vh;
-    width: 85%;
-    z-index: 1000;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
-    background: #0b1120;
-    display: block !important;
-  }
-
-  .sidebar.mobile-open {
-    transform: translateX(0);
-  }
-
-  /* CONTENT: Remove padding that might block scroll */
-  .content { 
-    margin-left: 0; 
-    width: 100%; 
-    padding: 20px;
-    padding-bottom: 100px; /* Extra space at bottom for scrolling */
-    box-sizing: border-box;
-    overflow: visible; /* Let parent handle scroll */
-  }
-
-  /* HISTORY DRAWER: Bottom Sheet on Mobile */
-  .history-drawer {
-    position: fixed;
-    bottom: 0; left: 0;
-    width: 100%;
-    height: 60vh;
-    border-top: 2px solid #3b82f6;
-    border-left: none;
-    z-index: 950;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-    background: #0b1120;
-    display: block !important;
-  }
-
-  /* HEADER BUTTONS */
-  .btn-mobile-menu {
-    display: block;
-    background: #3b82f6;
-    border: none;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 4px;
-    font-size: 16px;
-    margin-right: 10px;
-    cursor: pointer;
-    font-weight: bold;
-  }
-
-  .grid { grid-template-columns: 1fr; }
-  
-  .scanner-box, .scanner-box-search { width: 100% !important; }
-}
-
-/* --- UTILITY BUTTONS (Import/Export) --- */
+/* Utility Buttons (Import/Export) */
 .btn-utility {
   flex: 1;
   padding: 8px;
@@ -410,7 +142,20 @@ body {
 }
 .btn-utility:hover { background: #475569; }
 
-/* --- SEARCH & FILTER GROUP --- */
+/* =========================================
+   4. TOP BAR & SEARCH
+   ========================================= */
+.top-bar { 
+  display: flex; 
+  gap: 16px; 
+  margin-bottom: 20px; 
+  position: sticky; 
+  top: 0; 
+  z-index: 10; 
+  background: var(--bg); 
+  padding-bottom: 10px; 
+}
+
 .search-group {
   flex: 1;
   display: flex;
@@ -435,13 +180,14 @@ body {
 }
 .filter-select option { background: var(--bg); }
 
-/* Override search-bar to fit in group */
 .search-group .search-bar {
+  flex: 1;
   border: none;
   background: transparent;
   padding: 8px;
   margin: 0;
-  box-shadow: none; /* Remove any default shadow */
+  color: white;
+  outline: none;
 }
 
 .search-group .btn-scan-search {
@@ -449,132 +195,203 @@ body {
   background: transparent;
   font-size: 18px;
   padding: 0 10px;
+  cursor: pointer;
 }
 
-/* --- CUSTOM CAMERA OVERLAY --- */
-.scanner-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.95);
-  z-index: 2000;
-  display: flex;
-  justify-content: center;
+/* =========================================
+   5. DEVICE CARDS
+   ========================================= */
+.card { 
+  background: var(--card); 
+  padding: 20px; 
+  border-radius: 16px; 
+  border: 2px solid transparent; 
+  cursor: pointer; 
+  transition: 0.2s; 
+}
+.card:hover { border-color: var(--border); }
+.card.active { border-color: var(--primary); background: #243147; }
+
+.card-sn { 
+  font-weight: 700; 
+  display: flex; 
+  justify-content: space-between; 
+  margin-bottom: 10px; 
+  font-size: 15px; 
   align-items: center;
 }
 
-.scanner-modal {
-  width: 100%;
-  max-width: 450px;
-  background: #000;
-  border-radius: 20px;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  display: flex;
-  flex-direction: column;
+/* Tags */
+.tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; color: white; font-weight: 800; }
+.V6 { background: var(--v6); }
+
+/* IMEI Styling */
+.card-imeis { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
+.imei-row { 
+  font-size: 13px; color: var(--text-muted); 
+  background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; 
 }
 
-.camera-viewport {
-  width: 100%;
-  height: 350px; /* Square-ish viewport */
-  background: #000;
+/* Location/Status Badge */
+.card-location { 
+  color: var(--primary); font-weight: 800; font-size: 13px; 
+  text-transform: uppercase; background: rgba(59, 130, 246, 0.1); 
+  padding: 6px 12px; border-radius: 8px; display: inline-block; 
 }
 
-/* Hide Html5Qrcode's default ugly text/links */
-#reader__dashboard_section_csr span, 
-#reader__dashboard_section_swaplink { display: none !important; }
-
-.scanner-controls {
-  padding: 20px;
-  text-align: center;
-  background: #1e293b;
-  color: white;
-}
-
-.btn-close-scanner {
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 12px 40px;
-  border-radius: 30px;
-  font-weight: bold;
-  font-size: 16px;
-  cursor: pointer;
-  margin-top: 10px;
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
-}
-
-/* Generic Modal (for Import Results) */
+/* =========================================
+   6. DETAILS SHEET (Modal/Drawer)
+   ========================================= */
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8); z-index: 2000;
+  background: rgba(0,0,0,0.8); z-index: 1500;
   display: flex; justifyContent: center; alignItems: center;
-}
-.modal-content {
-  background: #1e293b; padding: 25px; borderRadius: 15px; width: 90%; maxWidth: 400px;
-  text-align: center; border: 1px solid var(--border);
-}
-/* --- CUSTOM CAMERA OVERLAY (Fullscreen Fix) --- */
-.scanner-overlay {
-  position: fixed;
-  top: 0; 
-  left: 0;
-  width: 100%; 
-  height: 100%;
-  background: #000;
-  z-index: 9999; /* Highest priority */
-  display: flex;
-  flex-direction: column;
+  backdrop-filter: blur(2px);
 }
 
-/* Make the video fill the screen */
-.scanner-modal {
-  width: 100%;
-  height: 100%;
-  position: relative;
+.details-sheet {
   display: flex;
   flex-direction: column;
+  max-height: 85vh;
+  width: 95%;
+  max-width: 500px;
+  background: #1e293b;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.sheet-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 15px 20px; background: #0f172a; border-bottom: 1px solid #334155;
+}
+.sheet-header h3 { margin: 0; color: white; }
+.btn-close-sheet { background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; }
+
+.sheet-info { padding: 20px; background: #1e293b; }
+.info-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+.info-row .label { color: #94a3b8; font-size: 14px; }
+.info-row .value { color: white; font-weight: 500; font-size: 14px; }
+.status-badge { color: #3b82f6 !important; font-weight: bold; }
+
+.sheet-actions { padding: 0 20px 20px 20px; }
+.btn-edit-device {
+  width: 100%; padding: 12px; background: #3b82f6; color: white;
+  border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;
+}
+
+.sheet-history {
+  flex: 1; padding: 20px; background: #0f172a;
+  overflow-y: auto; border-top: 1px solid #334155;
+}
+.sheet-history h4 { margin-top: 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; }
+
+.history-item { margin-bottom: 15px; padding-left: 10px; border-left: 2px solid var(--primary); }
+.h-date { font-size: 11px; color: #64748b; }
+.h-status { font-weight: bold; color: #e2e8f0; font-size: 13px; }
+.h-note { font-size: 12px; color: #94a3b8; margin-top: 2px; font-style: italic; }
+
+/* Generic Modal Content (For Import Results) */
+.modal-content {
+  background: #1e293b; padding: 25px; border-radius: 15px; 
+  width: 90%; max-width: 400px; text-align: center; border: 1px solid var(--border);
+}
+
+/* =========================================
+   7. FULLSCREEN SCANNER
+   ========================================= */
+.scanner-overlay {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #000;
+  z-index: 9999;
+  display: flex; flex-direction: column;
+}
+
+.scanner-modal {
+  width: 100%; height: 100%;
+  position: relative; display: flex; flex-direction: column;
 }
 
 .camera-viewport {
-  flex: 1; /* Take all available space */
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: black;
+  flex: 1; width: 100%; height: 100%;
+  overflow: hidden; background: black;
 }
 
 /* Force video to cover screen properly */
 .camera-viewport video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
+  width: 100% !important; height: 100% !important; object-fit: cover !important;
 }
 
-/* Floating Controls at the bottom */
 .scanner-controls {
-  position: absolute;
-  bottom: 30px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  z-index: 10000; /* Above the video */
-  pointer-events: none; /* Let clicks pass through empty areas */
+  position: absolute; bottom: 50px; left: 0; width: 100%;
+  text-align: center; z-index: 10000; pointer-events: none;
 }
 
-/* The Stop Button */
 .btn-close-scanner {
-  pointer-events: auto; /* Re-enable clicks for button */
-  background: rgba(239, 68, 68, 0.9); /* Red with slight transparency */
-  color: white;
-  border: 2px solid white;
-  padding: 15px 40px;
-  border-radius: 50px;
-  font-weight: 800;
-  font-size: 18px;
-  text-transform: uppercase;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  cursor: pointer;
-  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  background: rgba(220, 38, 38, 0.9);
+  color: white; border: 3px solid rgba(255,255,255,0.5);
+  padding: 15px 40px; border-radius: 50px;
+  font-weight: 800; font-size: 18px; text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  cursor: pointer; backdrop-filter: blur(4px);
+}
+
+/* Hide library internals */
+#reader__dashboard_section_csr span, 
+#reader__dashboard_section_swaplink { display: none !important; }
+
+/* =========================================
+   8. MOBILE RESPONSIVENESS
+   ========================================= */
+
+/* Default State */
+.btn-mobile-menu { display: none; }
+.overlay-backdrop { display: none; }
+
+@media (max-width: 768px) {
+  .app-shell {
+    display: block; /* Stack layout */
+    height: 100vh; overflow-y: scroll; -webkit-overflow-scrolling: touch;
+  }
+
+  /* Backdrop for Sidebar */
+  .overlay-backdrop {
+    display: block; position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+    z-index: 900; backdrop-filter: blur(2px);
+  }
+
+  /* Sidebar Slide-in */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    height: 100vh; width: 85%; z-index: 1000;
+    transform: translateX(-100%); transition: transform 0.3s ease-in-out;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+    display: block !important; /* Override flex */
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+
+  /* Content Adjustments */
+  .content { 
+    width: 100%; padding: 20px; padding-bottom: 100px;
+  }
+
+  /* Header Button */
+  .btn-mobile-menu {
+    display: block; background: #3b82f6; border: none; color: white;
+    padding: 10px 15px; border-radius: 4px; font-size: 16px;
+    margin-right: 10px; cursor: pointer; font-weight: bold;
+  }
+
+  .grid { grid-template-columns: 1fr; }
+  
+  /* Details Sheet - Bottom Sheet Style */
+  .details-sheet {
+    position: absolute; bottom: 0;
+    width: 100%; max-width: 100%; border-radius: 20px 20px 0 0;
+    border: none; border-top: 1px solid var(--primary);
+  }
 }
