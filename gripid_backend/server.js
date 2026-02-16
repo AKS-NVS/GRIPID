@@ -43,11 +43,31 @@ const History = mongoose.model('History', HistorySchema);
 
 // --- API ROUTES ---
 
-// GET All Devices
+// GET All Devices (With Pagination)
 app.get('/api/devices', async (req, res) => {
   try {
-    const devices = await Device.find().sort({ _id: -1 });
-    res.json(devices);
+    // 1. Get page number from URL (default to 1)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50; // 50 items per page
+    const skip = (page - 1) * limit;
+
+    // 2. Fetch specific chunk
+    const devices = await Device.find()
+      .sort({ _id: -1 }) // Newest first
+      .skip(skip)
+      .limit(limit);
+
+    // 3. Count total for "Page 1 of X" calculation
+    const total = await Device.countDocuments();
+
+    // 4. Return structured response
+    res.json({
+      data: devices,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalDevices: total
+    });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -130,14 +150,14 @@ app.put('/api/devices/:id', async (req, res) => {
   }
 });
 
-// --- NEW ROUTE: EXCEL UPLOAD ---
+// --- EXCEL UPLOAD ROUTE ---
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
     // 1. Read Excel File
     const workbook = xlsx.readFile(req.file.path);
-    const sheetName = workbook.SheetNames[0]; // Read first sheet
+    const sheetName = workbook.SheetNames[0]; 
     const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     let addedCount = 0;
@@ -210,18 +230,16 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// --- NEW ROUTE: EXCEL EXPORT (Download DB) ---
+// --- EXCEL EXPORT ROUTE ---
 app.get('/api/export', async (req, res) => {
   try {
     const devices = await Device.find().sort({ _id: -1 });
 
-    // Format data for Excel
     const data = devices.map(d => ({
       "SN": d.sn_no,
       "IMEI 1": d.imei_1,
       "IMEI 2": d.imei_2,
       "Status": d.current_status,
-      // Just showing creation date; for note we'd need to fetch history but keep it simple for speed
       "Added On": d._id.getTimestamp() 
     }));
 

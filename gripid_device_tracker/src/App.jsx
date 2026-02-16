@@ -12,11 +12,17 @@ function App() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("ALL");
   
-  // --- CUSTOM SCANNER STATE ---
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  
+  // Scanner State
   const [isScanning, setIsScanning] = useState(false);
-  const [scanMode, setScanMode] = useState(null); // 'SEARCH' or 'AUTOFILL'
+  const [scanMode, setScanMode] = useState(null);
   const scannerRef = useRef(null); 
 
+  // UI State
   const [isEditing, setIsEditing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
@@ -26,16 +32,28 @@ function App() {
     sn_no: '', imei_1: '', imei_2: '', status: '', note: '' 
   });
 
-  const loadDevices = useCallback(() => {
-    fetch('/api/devices')
+  // --- FETCH DEVICES (With Pagination) ---
+  const loadDevices = useCallback((pageNo = 1) => {
+    // Add timestamp to prevent caching issues
+    fetch(`/api/devices?page=${pageNo}&limit=50&_t=${Date.now()}`)
       .then(res => res.json())
-      .then(data => setDevices(Array.isArray(data) ? data : []))
+      .then(response => {
+        if (response.data) {
+          setDevices(response.data);
+          setPage(response.currentPage);
+          setTotalPages(response.totalPages);
+          setTotalCount(response.totalDevices);
+        } else {
+          // Fallback if backend sends old array format
+          setDevices(Array.isArray(response) ? response : []);
+        }
+      })
       .catch(err => console.error("Fetch error:", err));
   }, []);
 
-  useEffect(() => { loadDevices(); }, [loadDevices]);
+  useEffect(() => { loadDevices(page); }, [loadDevices, page]);
 
-  // --- UPDATED: ROBUST SCANNER LOGIC ---
+  // --- SCANNER LOGIC ---
   const startScanner = (mode) => {
     if (isScanning) return;
     setScanMode(mode);
@@ -45,48 +63,25 @@ function App() {
       const html5QrCode = new Html5Qrcode("reader");
       scannerRef.current = html5QrCode;
 
-      // 1. Wide Rectangle Box (Better for SN labels)
+      // Responsive Scan Box (Wide for Barcodes)
       const qrboxSize = window.innerWidth < 600 
-        ? { width: 300, height: 150 }  // Mobile
-        : { width: 500, height: 200 }; // Desktop
+        ? { width: 300, height: 150 } 
+        : { width: 500, height: 200 };
 
       const config = { 
-        fps: 15, // Faster scanning
+        fps: 15, 
         qrbox: qrboxSize,
         aspectRatio: window.innerHeight / window.innerWidth,
-        // Experimental feature to prefer barcode formats
         experimentalFeatures: { useBarCodeDetectorIfSupported: true } 
       };
       
-      // Enable scanning for normal Barcodes (Code 128, etc), not just QR
-      const allFormats = [
-        0, // QR_CODE
-        1, // AZTEC
-        2, // CODABAR
-        3, // CODE_39 (Standard for SNs)
-        4, // CODE_93
-        5, // CODE_128 (Standard for IMEIs/Shipping)
-        6, // DATA_MATRIX
-        7, // MAXICODE
-        8, // ITF
-        9, // EAN_13
-        10, // EAN_8
-        11, // PDF_417
-        12, // RSS_14
-        13, // RSS_EXPANDED
-        14, // UPC_A
-        15, // UPC_E
-      ];
+      const allFormats = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ]; // All barcode types
 
       html5QrCode.start(
         { facingMode: "environment" }, 
         { ...config, formatsToSupport: allFormats }, 
-        (decodedText) => {
-          handleScanSuccess(decodedText, mode);
-        },
-        (errorMessage) => {
-          // ignore failures
-        }
+        (decodedText) => { handleScanSuccess(decodedText, mode); },
+        () => {} // Ignore errors
       ).catch(err => {
         console.error("Camera failed", err);
         setIsScanning(false);
@@ -100,9 +95,7 @@ function App() {
       try {
         await scannerRef.current.stop();
         scannerRef.current.clear();
-      } catch (err) {
-        console.error("Stop failed", err);
-      }
+      } catch (err) {}
       scannerRef.current = null;
     }
     setIsScanning(false);
@@ -111,7 +104,6 @@ function App() {
 
   const handleScanSuccess = (text, mode) => {
     const cleanText = text.trim().toUpperCase();
-
     if (mode === 'SEARCH') {
       setSearch(cleanText);
       stopScanner(); 
@@ -125,14 +117,11 @@ function App() {
           return p;
         });
       }
-      // Note: Scanner stays open for rapid scanning
     }
   };
 
-  // --- EXPORT/IMPORT LOGIC ---
-  const handleExport = () => {
-    window.location.href = '/api/export';
-  };
+  // --- IMPORT / EXPORT ---
+  const handleExport = () => { window.location.href = '/api/export'; };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -145,11 +134,12 @@ function App() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.message);
       setUploadResult(result);
-      loadDevices();
+      loadDevices(page); // Refresh current page
     } catch (err) { alert("Upload Error: " + err.message); }
     e.target.value = null;
   };
 
+  // --- VIEW & EDIT FLOW ---
   const loadHistory = (sn) => {
     setHistory([]); setIsLoadingHistory(true);
     fetch(`/api/devices/${sn}/history`).then(res=>res.json()).then(d=>{
@@ -157,20 +147,14 @@ function App() {
     }).catch(e=>setIsLoadingHistory(false));
   };
 
-  // --- NEW INTERACTION FLOW ---
-
-  // 1. User Taps Card -> Opens Details Modal (View Only)
   const handleCardClick = (device) => {
     setSelectedDevice(device);
     setIsEditing(false); 
     loadHistory(device.sn_no);
-    // Note: We do NOT open mobileMenuOpen here.
   };
 
-  // 2. User clicks "Edit" inside Modal -> Opens Sidebar
   const handleEditStart = () => {
     if (!selectedDevice) return;
-    
     setIsEditing(true);
     setFormData({
       sn_no: selectedDevice.sn_no || '',
@@ -179,35 +163,24 @@ function App() {
       status: selectedDevice.current_status || '',
       note: ''
     });
-    
-    setMobileMenuOpen(true); // Open Sidebar
-    setSelectedDevice(null); // Close Details Modal
+    setMobileMenuOpen(true); 
+    setSelectedDevice(null); 
   };
 
-  // 3. Reset for New Entry
   const resetForm = () => {
-    setIsEditing(false); 
-    setSelectedDevice(null); 
-    setHistory([]);
+    setIsEditing(false); setSelectedDevice(null); setHistory([]);
     setFormData({ sn_no: '', imei_1: '', imei_2: '', status: '', note: '' });
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     const method = isEditing ? 'PUT' : 'POST';
-    // If editing, we likely had a selected device before, but we closed the modal.
-    // However, we need the ID. If we are editing, we assume formData corresponds to the device being edited.
-    // Wait, we need the ID. Let's ensure we store the ID in formData or state when editing starts.
-    // Simpler fix: Use the device ID from the list that matches the SN, OR simpler:
-    // When handleEditStart runs, we should keep the ID in a separate state or just rely on finding it.
-    // Actually, `selectedDevice` is null now. 
-    // FIX: Let's find the device ID from the `devices` array using `sn_no` which is unique enough for this flow,
-    // OR better, let's just keep `selectedDevice` for the ID reference but hide the modal.
     
-    // Better approach implemented below:
-    // We will look up the device by SN to get the ID if we are in editing mode.
+    // Logic to find ID if editing
     let targetId = null;
     if (isEditing) {
+        // We find the device in the current list that matches the SN we started editing
+        // This is safe because we populate formData from selectedDevice
         const found = devices.find(d => d.sn_no === formData.sn_no);
         if (found) targetId = found._id;
     }
@@ -226,6 +199,7 @@ function App() {
         setDevices(prev => prev.map(d => d._id === updatedDevice._id ? updatedDevice : d));
         setFormData(p => ({ ...p, note: '' }));
       } else {
+        // Add new device to top of list
         setDevices(prev => [updatedDevice, ...prev]); 
         resetForm();
       }
@@ -240,6 +214,7 @@ function App() {
     return null; 
   };
 
+  // --- FILTERING ---
   const filtered = devices.filter(d => {
     const matchesSearch = (d.sn_no || "").toUpperCase().includes(search.toUpperCase()) ||
                           (d.imei_1 || "").includes(search) || (d.imei_2 || "").includes(search);
@@ -310,19 +285,46 @@ function App() {
             </div>
           ))}
         </div>
+
+        {/* PAGINATION CONTROLS */}
+        <div className="pagination-bar" style={{display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '30px', padding: '20px', background: '#1e293b', borderRadius: '12px', border: '1px solid #334155'}}>
+          <button 
+            className="btn-page" 
+            style={{background: page === 1 ? '#334155' : '#3b82f6', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: page === 1 ? 'not-allowed' : 'pointer'}}
+            disabled={page === 1} 
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            ← Prev
+          </button>
+          
+          <span className="page-info" style={{textAlign: 'center', color: 'white', fontWeight: 'bold'}}>
+            Page {page} of {totalPages} <br/>
+            <small style={{color: '#94a3b8', fontWeight: 'normal'}}>({totalCount} Items)</small>
+          </span>
+          
+          <button 
+            className="btn-page" 
+            style={{background: page >= totalPages ? '#334155' : '#3b82f6', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: page >= totalPages ? 'not-allowed' : 'pointer'}}
+            disabled={page >= totalPages} 
+            onClick={() => setPage(p => p + 1)}
+          >
+            Next →
+          </button>
+        </div>
+
       </main>
 
-     {/* --- NEW: MODERN DETAILS SHEET --- */}
+      {/* --- NEW: MODERN DETAILS SHEET --- */}
       {selectedDevice && !mobileMenuOpen && (
         <div className="modal-overlay" onClick={() => setSelectedDevice(null)}>
           <div className="modal-content details-sheet" onClick={e => e.stopPropagation()}>
             
-            {/* 1. Drag Handle Visual */}
+            {/* Drag Handle */}
             <div className="sheet-handle-bar" onClick={() => setSelectedDevice(null)}>
               <div className="sheet-handle"></div>
             </div>
 
-            {/* 2. Header with Big Status */}
+            {/* Header */}
             <div className="sheet-header-modern">
               <div className="sheet-title-row">
                 <h2>{selectedDevice.sn_no}</h2>
@@ -334,7 +336,7 @@ function App() {
             </div>
 
             <div className="sheet-scroll-content">
-              {/* 3. Data Grid (Side by Side) */}
+              {/* Data Grid */}
               <div className="data-grid">
                 <div className="data-box">
                   <span className="label">IMEI 1</span>
@@ -346,7 +348,7 @@ function App() {
                 </div>
               </div>
 
-              {/* 4. Timeline History */}
+              {/* Timeline */}
               <div className="timeline-section">
                 <h4>Activity Log</h4>
                 <div className="timeline-container">
@@ -368,7 +370,7 @@ function App() {
               </div>
             </div>
 
-            {/* 5. Fixed Bottom Action */}
+            {/* Footer */}
             <div className="sheet-footer">
               <button className="btn-edit-action" onClick={handleEditStart}>
                 ✏️ Edit / Update
@@ -394,7 +396,7 @@ function App() {
       {/* Import Results Modal */}
       {uploadResult && (
         <div className="modal-overlay">
-           <div className="modal-content">
+           <div className="modal-content" style={{padding: '25px', borderRadius: '15px'}}>
              <h3>Import Results</h3>
              <div style={{display:'flex', gap:'10px', marginBottom:'10px'}}>
                <div style={{flex:1, textAlign:'center', background:'#10b981', padding:'10px', borderRadius:'5px'}}>

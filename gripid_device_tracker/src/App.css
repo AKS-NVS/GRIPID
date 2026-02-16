@@ -603,3 +603,16 @@ body {
     to { opacity: 1; transform: scale(1); }
   }
 }
+/* =========================================
+   0. GLOBAL RESET (Fixes Horizontal Scroll)
+   ========================================= */
+* {
+  box-sizing: border-box; /* Crucial: Includes padding in width */
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden; /* Stop horizontal play */
+  overscroll-behavior-y: none; /* Disables "pull to refresh" bounce on main body */
+}
