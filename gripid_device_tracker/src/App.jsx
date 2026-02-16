@@ -35,32 +35,41 @@ function App() {
 
   useEffect(() => { loadDevices(); }, [loadDevices]);
 
-  // --- NEW: Custom Camera Logic ---
+// --- UPDATED: CUSTOM SCANNER LOGIC ---
   const startScanner = (mode) => {
     if (isScanning) return;
     setScanMode(mode);
     setIsScanning(true);
 
-    // Wait 300ms for the "reader" div to render in the DOM
     setTimeout(() => {
       const html5QrCode = new Html5Qrcode("reader");
       scannerRef.current = html5QrCode;
 
-      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      // 1. rectangular box for long barcodes (SN/IMEI)
+      // On mobile, we adjust width to be responsive
+      const qrboxSize = window.innerWidth < 400 
+        ? { width: 280, height: 150 } 
+        : { width: 350, height: 150 };
+
+      const config = { 
+        fps: 15, // Higher FPS for faster scanning
+        qrbox: qrboxSize,
+        aspectRatio: window.innerHeight / window.innerWidth
+      };
       
       html5QrCode.start(
-        { facingMode: "environment" }, // Forces Back Camera
+        { facingMode: "environment" }, 
         config,
         (decodedText) => {
           handleScanSuccess(decodedText, mode);
         },
         (errorMessage) => {
-          // Ignore frame parse errors
+          // ignore failures
         }
       ).catch(err => {
         console.error("Camera failed", err);
         setIsScanning(false);
-        alert("Could not start camera. Ensure permissions are granted.");
+        alert("Camera error: " + err);
       });
     }, 300);
   };
