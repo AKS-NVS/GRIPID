@@ -312,52 +312,67 @@ function App() {
         </div>
       </main>
 
-      {/* --- NEW: DETAILS SHEET (Replaces History Drawer) --- */}
+     {/* --- NEW: MODERN DETAILS SHEET --- */}
       {selectedDevice && !mobileMenuOpen && (
         <div className="modal-overlay" onClick={() => setSelectedDevice(null)}>
           <div className="modal-content details-sheet" onClick={e => e.stopPropagation()}>
             
-            <div className="sheet-header">
-              <h3>Device Details</h3>
-              <button className="btn-close-sheet" onClick={() => setSelectedDevice(null)}>✕</button>
+            {/* 1. Drag Handle Visual */}
+            <div className="sheet-handle-bar" onClick={() => setSelectedDevice(null)}>
+              <div className="sheet-handle"></div>
             </div>
 
-            <div className="sheet-info">
-              <div className="info-row">
-                <span className="label">SN:</span> 
-                <span className="value">{selectedDevice.sn_no} {renderVersionTag(selectedDevice.sn_no)}</span>
+            {/* 2. Header with Big Status */}
+            <div className="sheet-header-modern">
+              <div className="sheet-title-row">
+                <h2>{selectedDevice.sn_no}</h2>
+                {renderVersionTag(selectedDevice.sn_no)}
               </div>
-              <div className="info-row">
-                <span className="label">IMEI 1:</span> <span className="value">{selectedDevice.imei_1 || '--'}</span>
-              </div>
-              <div className="info-row">
-                <span className="label">IMEI 2:</span> <span className="value">{selectedDevice.imei_2 || '--'}</span>
-              </div>
-              <div className="info-row">
-                <span className="label">Status:</span> 
-                <span className="value status-badge">{selectedDevice.current_status}</span>
+              <div className={`status-pill ${selectedDevice.current_status === 'In Stock' ? 'status-green' : 'status-blue'}`}>
+                {selectedDevice.current_status}
               </div>
             </div>
 
-            <div className="sheet-actions">
-              <button className="btn-edit-device" onClick={handleEditStart}>
-                ✏️ Edit Device
+            <div className="sheet-scroll-content">
+              {/* 3. Data Grid (Side by Side) */}
+              <div className="data-grid">
+                <div className="data-box">
+                  <span className="label">IMEI 1</span>
+                  <span className="value">{selectedDevice.imei_1 || '---'}</span>
+                </div>
+                <div className="data-box">
+                  <span className="label">IMEI 2</span>
+                  <span className="value">{selectedDevice.imei_2 || '---'}</span>
+                </div>
+              </div>
+
+              {/* 4. Timeline History */}
+              <div className="timeline-section">
+                <h4>Activity Log</h4>
+                <div className="timeline-container">
+                  {isLoadingHistory ? <p className="loading-text">⏳ Loading history...</p> : (
+                    history.length > 0 ? history.map((h, i) => (
+                      <div key={i} className="timeline-item">
+                        <div className="timeline-dot"></div>
+                        <div className="timeline-content">
+                          <div className="t-header">
+                            <span className="t-status">{h.status}</span>
+                            <span className="t-date">{new Date(h.date).toLocaleDateString()}</span>
+                          </div>
+                          {h.note && <div className="t-note">{h.note}</div>}
+                        </div>
+                      </div>
+                    )) : <p className="empty-msg">No history found.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Fixed Bottom Action */}
+            <div className="sheet-footer">
+              <button className="btn-edit-action" onClick={handleEditStart}>
+                ✏️ Edit / Update
               </button>
-            </div>
-
-            <div className="sheet-history">
-              <h4>History Log</h4>
-              <div className="history-list">
-                {isLoadingHistory ? <p>⏳ Loading...</p> : (
-                  history.length > 0 ? history.map((h, i) => (
-                    <div key={i} className="history-item">
-                      <div className="h-date">{new Date(h.date).toLocaleDateString()}</div>
-                      <div className="h-status">{h.status}</div>
-                      {h.note && <div className="h-note">{h.note}</div>}
-                    </div>
-                  )) : <p className="empty-msg">No history recorded.</p>
-                )}
-              </div>
             </div>
 
           </div>
