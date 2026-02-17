@@ -102,30 +102,101 @@ body {
 }
 
 /* =========================================
-   4. TOP BAR & SEARCH
+   4. TOP BAR & SEARCH (Responsive Fix)
    ========================================= */
 .top-bar { 
-  display: flex; gap: 16px; margin-bottom: 20px; 
-  position: sticky; top: 0; z-index: 10; 
-  background: var(--bg); padding-bottom: 10px; 
+  display: flex; 
+  align-items: center; /* Vertically center everything */
+  gap: 16px; 
+  margin-bottom: 20px; 
+  position: sticky; 
+  top: 0; 
+  z-index: 100; /* Higher than content */
+  background: var(--bg); 
+  padding-bottom: 10px; 
+  width: 100%; /* Ensure it doesn't exceed parent */
 }
 
+/* The Container for Filter + Input + Camera */
 .search-group {
-  flex: 1; display: flex; gap: 8px; background: var(--card); 
-  padding: 5px; border-radius: 10px; border: 1px solid var(--border); align-items: center;
+  flex: 1; /* Take all remaining space */
+  display: flex; 
+  gap: 5px; 
+  background: var(--card); 
+  padding: 4px; 
+  border-radius: 10px; 
+  border: 1px solid var(--border); 
+  align-items: center;
+  
+  /* CRITICAL FIX: prevents container from being wider than screen */
+  max-width: 100%; 
+  overflow: hidden; 
 }
 
+/* 1. Filter Dropdown */
 .filter-select {
-  background: transparent; color: white; border: none; 
-  border-right: 1px solid var(--border); padding: 0 10px; font-weight: bold; cursor: pointer; outline: none; height: 100%;
+  background: transparent; 
+  color: white; 
+  border: none; 
+  border-right: 1px solid var(--border); 
+  padding: 0 8px; 
+  font-weight: bold; 
+  cursor: pointer; 
+  outline: none; 
+  height: 36px; /* Fixed height for consistency */
+  font-size: 13px;
+  flex-shrink: 0; /* Prevent filter from vanishing */
 }
 .filter-select option { background: var(--bg); }
 
+/* 2. Search Input (THE CULPRIT) */
 .search-group .search-bar {
-  flex: 1; border: none; background: transparent; padding: 8px; color: white; outline: none;
+  flex: 1; /* Grow to fill space */
+  
+  /* CRITICAL FIX: Allows flex item to shrink below content size */
+  min-width: 0; 
+  width: 0; 
+  
+  border: none; 
+  background: transparent; 
+  padding: 8px; 
+  color: white; 
+  outline: none;
+  font-size: 14px;
 }
+
+/* 3. Camera Button */
 .search-group .btn-scan-search {
-  border: none; background: transparent; font-size: 18px; padding: 0 10px; cursor: pointer;
+  border: none; 
+  background: transparent; 
+  font-size: 18px; 
+  padding: 0 10px; 
+  cursor: pointer;
+  flex-shrink: 0; /* Don't squash the camera icon */
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+/* MOBILE SPECIFIC ADJUSTMENTS */
+@media (max-width: 768px) {
+  .top-bar {
+    gap: 8px; /* Smaller gap on phones */
+  }
+
+  /* Make the menu button compact */
+  .btn-mobile-menu {
+    white-space: nowrap; /* Prevent text wrapping */
+    flex-shrink: 0;      /* Don't shrink the button */
+    margin: 0;           /* Remove extra margin */
+    padding: 10px 12px;
+  }
+
+  /* Make text slightly smaller to fit more */
+  .filter-select {
+    font-size: 12px;
+    padding: 0 5px;
+  }
 }
 
 /* =========================================
